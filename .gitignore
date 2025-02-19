@@ -1,0 +1,40 @@
+# Répertoires et fichiers Unity à ignorer
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Pp]ackages/
+UserSettings/
+MemoryCaptures/
+
+# Fichiers de cache et de configuration spécifique à Unity
+/Assets/Scenes/*.unity.meta
+
+# Visual Studio / JetBrains Rider
+.vscode/
+*.sln
+*.csproj
+*.unityproj
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+
+# Fichiers de cache et temporaires
+*.apk
+*.aab
+*.unitypackage
+*.log
+*.DS_Store
+*.swp
+
+# Ignorer les fichiers de configuration locales
+*.bak
+*.old
+*.orig
