@@ -109,9 +109,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58df1289cb15a4e4c9a59dcd79df4339, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 0.5
+  bubbleType: 0
+  speed: 0.3
   basePoints: 10
-  growthRate: 2
+  growthRate: 1.5
   generation: 0
   maxGenerations: 2
   bubblePrefab: {fileID: 790152627024270747}
@@ -120,8 +121,8 @@ MonoBehaviour:
   explosionForce: 100
   spawnOffsetRadius: 1.5
   popEffect: {fileID: 3470074476890878589, guid: 88d9053b927862841860a2a5e3f71b04, type: 3}
-  shrinkDuration: 1
-  growDuration: 1.2
+  shrinkDuration: 0.5
+  growDuration: 0.2
 --- !u!1 &3987193437679428466
 GameObject:
   m_ObjectHideFlags: 0
@@ -132,7 +133,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6541512216010917160}
   - component: {fileID: 2605110744372001966}
-  - component: {fileID: 5019429170095206633}
   m_Layer: 0
   m_Name: Circle
   m_TagString: Untagged
@@ -207,24 +207,3 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!95 &5019429170095206633
-Animator:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3987193437679428466}
-  m_Enabled: 0
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 99e272ab5bff746438d71a2f77911ca3, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0

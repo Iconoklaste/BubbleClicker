@@ -1481,7 +1481,7 @@ MonoBehaviour:
   spawnWidth: 5
   spawnY: -5
   spawnAcceleration: 0.01
-  minSpawnInterval: 0.65
+  minSpawnInterval: 0.75
 --- !u!212 &1200513875
 SpriteRenderer:
   m_ObjectHideFlags: 0

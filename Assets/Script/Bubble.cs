@@ -1,8 +1,15 @@
 ﻿using DG.Tweening;
 using UnityEngine;
 
+public enum BubbleType { Normal, Swipe, Explosive, Freeze }
+
 public class Bubble : MonoBehaviour
+
 {
+    [Header("Type de bulles")]
+    [Tooltip("Type de bulle (Normal, Swipe, Explosive, Freeze)")]
+    public BubbleType bubbleType = BubbleType.Normal;
+
     [Header("Paramètres de déplacement et de points")]
     [Tooltip("Vitesse de montée de la bulle.")]
     public float speed = 2.0f;
@@ -35,14 +42,15 @@ public class Bubble : MonoBehaviour
     [Header("Effets visuels et audio")]
     [Tooltip("Système de particules pour simuler l'éclatement (optionnel).")]
     public ParticleSystem popEffect;
-    // Note : on ne garde plus l'AudioClip ici car on passe par l'AudioManager.
 
-    private Rigidbody2D rb;
-
-    // animation DOTween
-    public float shrinkDuration = 1f; // Durée de contraction pour chaque axe
+    [Header("Animation DOTween des bulles")]
+    [Tooltip("Durée de contraction sur X")]
+    public float shrinkDuration = 1f; 
+    [Tooltip("Durée de contraction sur Y")]
     public float growDuration = 0.5f;
 
+
+    private Rigidbody2D rb;
 
     void Awake()
     {
@@ -55,14 +63,28 @@ public class Bubble : MonoBehaviour
 
     void Start()
     {
+        if (Random.value < 0.15f) // 15% de chance d'avoir une bulle spéciale
+        {
+            int randomType = Random.Range(1, 4); // 1 = Swipe, 2 = Explosion, 3 = Freeze
+            bubbleType = (BubbleType)randomType;
+        }
+        else
+        {
+            bubbleType = BubbleType.Normal;
+        }
+
+        SetBubbleAppearance();
+
         AnimateBubble();
     }
 
     void Update()
     {
         // Croissance et déplacement de la bulle (déjà existants)
-        // transform.localScale += Vector3.one * growthRate * Time.deltaTime;
+        //transform.localScale += Vector3.one * growthRate * Time.deltaTime;
 
+
+        // Déplacement vers le haut (via la physique ou la translation)
         if (rb != null)
         {
             rb.velocity = Vector2.up * speed;
@@ -84,30 +106,32 @@ public class Bubble : MonoBehaviour
 
     void OnMouseDown()
     {
-        // Vérifier si le jeu est terminé avant de procéder
+        // Ne rien faire si le jeu est terminé
         if (GameManager.Instance != null && GameManager.Instance.gameIsOver)
-        {
             return;
-        }
 
         Debug.Log("Bulle cliquée à : " + transform.position);
 
-        // Calcul du score basé sur la génération.
-        int scoreAward = basePoints * (generation + 1);
-        if (GameManager.Instance != null)
+        // Selon le type de bulle, exécuter le pouvoir spécial
+        switch (bubbleType)
         {
-            GameManager.Instance.AddScore(scoreAward);
+            case BubbleType.Normal:
+                HandleNormalBubble();
+                break;
+            case BubbleType.Swipe:
+                // Active le mode swipe pour 3 secondes dans le GameManager
+                GameManager.Instance.ActivateSwipeMode(3f);
+                break;
+            case BubbleType.Explosive:
+                HandleExplosiveBubble();
+                break;
+            case BubbleType.Freeze:
+                // Active le mode freeze (ralentissement) pour 3 secondes
+                GameManager.Instance.ActivateFreezeMode(3f);
+                break;
         }
 
-        // Choix du son à jouer selon la génération.
-        if (generation == 0)
-            AudioManager.Instance.PlaySound(AudioType.Pop, AudioSourceType.Player);
-        else if (generation == 1)
-            AudioManager.Instance.PlaySound(AudioType.Swipe, AudioSourceType.Player);
-        else
-            AudioManager.Instance.PlaySound(AudioType.Dead, AudioSourceType.Player);
-
-        // Instancier et jouer l'effet de particules (explosion organique).
+        // Jouer l'effet de particules (ex: explosion) s'il est défini
         if (popEffect != null)
         {
             ParticleSystem effect = Instantiate(popEffect, transform.position, Quaternion.identity);
@@ -115,14 +139,18 @@ public class Bubble : MonoBehaviour
             Destroy(effect.gameObject, effect.main.duration);
         }
 
-        // Générer des bulles enfants si la génération est inférieure au maximum autorisé.
-        if (bubblePrefab != null && numberOfChildBubbles > 0 && generation < maxGenerations)
+        // Stopper toutes les animations DOTween sur ce transform
+        DOTween.Kill(transform, true);
+
+        // Pour les bulles normales, on génère les enfants (les bulles spéciales ne spawnent pas d'enfants)
+        if (bubbleType == BubbleType.Normal && bubblePrefab != null && numberOfChildBubbles > 0 && generation < maxGenerations)
         {
             for (int i = 0; i < numberOfChildBubbles; i++)
             {
                 Vector2 randomOffset = Random.insideUnitCircle * spawnOffsetRadius;
                 Vector2 spawnPosition = (Vector2)transform.position + randomOffset;
                 GameObject childBubble = Instantiate(bubblePrefab, spawnPosition, Quaternion.identity);
+                // Appliquer une réduction d'échelle aux enfants
                 childBubble.transform.localScale = transform.localScale * childScaleFactor;
 
                 Bubble childBubbleScript = childBubble.GetComponent<Bubble>();
@@ -130,6 +158,8 @@ public class Bubble : MonoBehaviour
                 {
                     childBubbleScript.generation = generation + 1;
                     childBubbleScript.growthRate = growthRate;
+                    childBubbleScript.bubbleType = BubbleType.Normal; // Toujours une bulle normale
+                    childBubbleScript.SetBubbleAppearance(); // Met à jour l'apparence en conséquence
                 }
 
                 Rigidbody2D childRb = childBubble.GetComponent<Rigidbody2D>();
@@ -142,17 +172,67 @@ public class Bubble : MonoBehaviour
             }
         }
 
-        // Détruire la bulle originale.
-        DOTween.Kill(transform, true);
+        // Détruire la bulle (elle disparaît après activation du pouvoir)
         Destroy(gameObject);
     }
 
-    void OnDestroy()
+    // Gestion de la bulle normale : ajoute le score et joue le son approprié
+    void HandleNormalBubble()
     {
-        DOTween.Kill(transform, true);
-        Debug.Log("OnDestroy appelé");
+        int scoreAward = basePoints * (generation + 1);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AddScore(scoreAward);
+        }
 
+        // Jouer le son selon la génération
+        if (generation == 0)
+            AudioManager.Instance.PlaySound(AudioType.Pop, AudioSourceType.Player);
+        else if (generation == 1)
+            AudioManager.Instance.PlaySound(AudioType.Swipe, AudioSourceType.Player);
+        else
+            AudioManager.Instance.PlaySound(AudioType.Dead, AudioSourceType.Player);
     }
+
+    // Gestion de la bulle explosive : détruit les bulles dans un rayon donné
+    void HandleExplosiveBubble()
+    {
+        float explosionRadius = 2f; // Rayon d’explosion
+
+        // Animation : Grossit rapidement avant d'exploser
+        transform.DOScale(Vector3.one * explosionRadius, 0.3f)
+            .SetEase(Ease.OutQuad)
+            .OnComplete(() =>
+            {
+                // Détruit les bulles autour après l'agrandissement
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
+                foreach (Collider2D col in colliders)
+                {
+                    Bubble bubble = col.GetComponent<Bubble>();
+                    if (bubble != null && bubble != this)
+                    {
+                        Destroy(bubble.gameObject);
+                    }
+                }
+
+                // Effet d'explosion (ajoute un effet visuel si disponible)
+                if (popEffect != null)
+                {
+                    ParticleSystem effect = Instantiate(popEffect, transform.position, Quaternion.identity);
+                    effect.Play();
+                    Destroy(effect.gameObject, effect.main.duration);
+                }
+
+                // Jouer un son d'explosion
+                AudioManager.Instance.PlaySound(AudioType.Dead, AudioSourceType.Player);
+
+                // Détruit la bulle explosive après son effet
+                Destroy(gameObject);
+            });
+    }
+
+
+
 
 
     void ClampPositionToScreen()
@@ -170,7 +250,11 @@ public class Bubble : MonoBehaviour
 
     void AnimateBubble()
     {
-        if (this == null || transform == null) return;
+        if (this == null || transform == null)
+        {
+            Debug.LogWarning("Échec de l'animation : l'objet ou son transform est null !");
+            return;
+        }
         Sequence seq = DOTween.Sequence();
 
         // Contraction sur X, expansion sur Y
@@ -193,6 +277,31 @@ public class Bubble : MonoBehaviour
               .SetLoops(-1, LoopType.Incremental); // Boucle pour un agrandissement progressif
     }
 
+    void SetBubbleAppearance()
+    {
+        switch (bubbleType)
+        {
+            case BubbleType.Swipe:
+                GetComponentInChildren<SpriteRenderer>().color = Color.green;
+                break;
+            case BubbleType.Explosive:
+                GetComponentInChildren<SpriteRenderer>().color = Color.red;
+                break;
+            case BubbleType.Freeze:
+                GetComponentInChildren<SpriteRenderer>().color = Color.blue;
+                break;
+            default:
+                GetComponentInChildren<SpriteRenderer>().color = Color.white;
+                break;
+        }
+    } 
 
+
+    void OnDestroy()
+    {
+        DOTween.Kill(transform, true);
+        Debug.Log("OnDestroy appelé");
+
+    }
 
 }

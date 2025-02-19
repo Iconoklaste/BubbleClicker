@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,7 +14,6 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Variables")]
     public bool gameIsOver = false;
-
     public float txCouvertureMax = 0.6f;
     private int score = 0;
     // Ce champ stocke le taux de couverture calculé (par rapport à la zone confinée)
@@ -25,6 +25,10 @@ public class GameManager : MonoBehaviour
 
     [Header("Spawner Reference")]
     public BubbleSpawner bubbleSpawner;
+
+    // Ces booléens pourront être utilisés par d'autres scripts pour adapter le gameplay
+    public bool swipeModeActive = false;
+    public bool freezeModeActive = false;
 
     void Awake()
     {
@@ -152,4 +156,38 @@ public class GameManager : MonoBehaviour
             bubbleSpawner.RestartSpawner();
         }
     }
+
+    public void ActivateSwipeMode(float duration)
+    {
+        Debug.Log("Activation du mode Swipe pour " + duration + " secondes.");
+        StartCoroutine(SwipeModeCoroutine(duration));
+    }
+
+    private IEnumerator SwipeModeCoroutine(float duration)
+    {
+        swipeModeActive = true;
+        // Ici, on peut ajouter le code pour activer les effets visuels ou logiques du mode Swipe.
+        yield return new WaitForSeconds(duration);
+        swipeModeActive = false;
+        Debug.Log("Mode Swipe désactivé.");
+    }
+
+    // Méthode d'activation du mode Freeze
+    public void ActivateFreezeMode(float duration)
+    {
+        Debug.Log("Activation du mode Freeze pour " + duration + " secondes.");
+        StartCoroutine(FreezeModeCoroutine(duration));
+    }
+
+    private IEnumerator FreezeModeCoroutine(float duration)
+    {
+        freezeModeActive = true;
+        // Par exemple, vous pouvez ralentir le temps de jeu pour les bulles (mais attention Time.timeScale affecte tout)
+        // Ou bien, appliquer un multiplicateur sur la vitesse de déplacement des bulles
+        // Ici on simule simplement l'effet par un Debug.Log
+        yield return new WaitForSeconds(duration);
+        freezeModeActive = false;
+        Debug.Log("Mode Freeze désactivé.");
+    }
+
 }
