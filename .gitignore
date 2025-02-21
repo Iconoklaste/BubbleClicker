@@ -25,6 +25,7 @@ MemoryCaptures/
 *.booproj
 *.svd
 *.pdb
+.vs/
 
 # Fichiers de cache et temporaires
 *.apk
