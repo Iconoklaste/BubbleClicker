@@ -3,16 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\assets\\script\\bubble.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|solutionrelative:assets\\script\\bubble.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|c:\\users\\public.tja_2k9xm03\\desktop\\unity\\bubbleclicker\\bubbleclicker\\assets\\script\\bullephysique.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|solutionrelative:assets\\script\\bullephysique.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|c:\\users\\public.tja_2k9xm03\\desktop\\unity\\bubbleclicker\\bubbleclicker\\assets\\script\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\assets\\script\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|solutionrelative:assets\\script\\gamemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\assets\\script\\bubblespawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|solutionrelative:assets\\script\\bubblespawner.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\assets\\script\\bubble1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9AB49082-7E76-2561-A1E1-6DC4497C1CA9}|Assembly-CSharp.csproj|solutionrelative:assets\\script\\bubble1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,19 +26,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "GameManager.cs",
-              "DocumentMoniker": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\GameManager.cs",
-              "RelativeDocumentMoniker": "Assets\\Script\\GameManager.cs",
-              "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\GameManager.cs",
-              "RelativeToolTip": "Assets\\Script\\GameManager.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAsAAAAdAAAA",
+              "DocumentIndex": 0,
+              "Title": "BullePhysique.cs",
+              "DocumentMoniker": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\BullePhysique.cs",
+              "RelativeDocumentMoniker": "Assets\\Script\\BullePhysique.cs",
+              "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\BullePhysique.cs",
+              "RelativeToolTip": "Assets\\Script\\BullePhysique.cs",
+              "ViewState": "AQIAADgAAAAAAAAAAAAAAGUAAABTAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T10:03:22.073Z",
+              "WhenOpened": "2025-02-21T09:31:48.981Z",
               "EditorCaption": ""
             },
             {
@@ -45,21 +49,35 @@
               "RelativeDocumentMoniker": "Assets\\Script\\BubbleSpawner.cs",
               "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\BubbleSpawner.cs",
               "RelativeToolTip": "Assets\\Script\\BubbleSpawner.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAACIAAAAJAAAA",
+              "ViewState": "AQIAABoAAAAAAAAAAAAUwEIAAAAVAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T10:02:56.013Z"
+              "WhenOpened": "2025-02-20T15:21:32.129Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Bubble.cs",
-              "DocumentMoniker": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\Bubble.cs",
-              "RelativeDocumentMoniker": "Assets\\Script\\Bubble.cs",
-              "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\Bubble.cs",
-              "RelativeToolTip": "Assets\\Script\\Bubble.cs",
-              "ViewState": "AQIAADwAAAAAAAAAAAAowFMAAAAKAAAA",
+              "DocumentIndex": 1,
+              "Title": "GameManager.cs",
+              "DocumentMoniker": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\GameManager.cs",
+              "RelativeDocumentMoniker": "Assets\\Script\\GameManager.cs",
+              "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\GameManager.cs",
+              "RelativeToolTip": "Assets\\Script\\GameManager.cs",
+              "ViewState": "AQIAAAYAAAAAAAAAAAAAADUAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-11T10:02:22.238Z",
+              "WhenOpened": "2025-02-20T11:24:49.891Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Bubble1.cs",
+              "DocumentMoniker": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\Bubble1.cs",
+              "RelativeDocumentMoniker": "Assets\\Script\\Bubble1.cs",
+              "ToolTip": "C:\\Users\\public.TJA_2K9XM03\\Desktop\\Unity\\BubbleClicker\\BubbleClicker\\Assets\\Script\\Bubble1.cs",
+              "RelativeToolTip": "Assets\\Script\\Bubble1.cs",
+              "ViewState": "AQIAADcAAAAAAAAAAAAgwFsAAAAfAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-20T10:54:52.871Z",
               "EditorCaption": ""
             }
           ]

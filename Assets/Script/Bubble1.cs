@@ -1,14 +1,14 @@
 ﻿using DG.Tweening;
 using UnityEngine;
 
-public enum BubbleType { Normal, Swipe, Explosive, Freeze }
+public enum Bubble1Type { Normal, Swipe, Explosive, Freeze }
 
-public class Bubble : MonoBehaviour
+public class Bubble1 : MonoBehaviour
 
 {
     [Header("Type de bulles")]
     [Tooltip("Type de bulle (Normal, Swipe, Explosive, Freeze)")]
-    public BubbleType bubbleType = BubbleType.Normal;
+    public Bubble1Type bubble1Type = Bubble1Type.Normal;
 
     [Header("Paramètres de déplacement et de points")]
     [Tooltip("Vitesse de montée de la bulle.")]
@@ -44,13 +44,21 @@ public class Bubble : MonoBehaviour
     public ParticleSystem popEffect;
 
     [Header("Animation DOTween des bulles")]
-    [Tooltip("Durée de contraction sur X")]
-    public float shrinkDuration = 1f; 
-    [Tooltip("Durée de contraction sur Y")]
-    public float growDuration = 0.5f;
+
 
 
     private Rigidbody2D rb;
+
+    public float amplitudeOscillation = 0.1f;
+    public float frequenceOscillation = 1f;
+    public float pressionInitiale = 1f;
+    public float pressionMinimale = 0.1f;
+
+    public float frequenceContraction = 2f;
+    public float amplitudeContraction = 0.1f;
+
+    private float pression;
+    private float startTimeOffset; // Décalage unique par bulle
 
     void Awake()
     {
@@ -63,25 +71,38 @@ public class Bubble : MonoBehaviour
 
     void Start()
     {
-        if (Random.value < 0.15f) // 15% de chance d'avoir une bulle spéciale
+        float chance = Random.value; // Valeur entre 0 et 1
+
+        if (chance < 0.05f) // 15% de chance d'avoir une bulle spéciale
         {
-            int randomType = Random.Range(1, 4); // 1 = Swipe, 2 = Explosion, 3 = Freeze
-            bubbleType = (BubbleType)randomType;
+            float specialChance = Random.value; // Autre tirage pour départager les types
+
+            if (specialChance < 0.33f) // 5% (1/3 de 15%)
+                bubble1Type = Bubble1Type.Swipe;
+            else if (specialChance < 0.47f) // 2% (reste de 15% après Swipe)
+                bubble1Type = Bubble1Type.Explosive;
+            else // 8% (reste des 15%)
+                bubble1Type = Bubble1Type.Freeze;
         }
         else
         {
-            bubbleType = BubbleType.Normal;
+            bubble1Type = Bubble1Type.Normal;
         }
 
-        SetBubbleAppearance();
+        SetBubble1Appearance();
+        //AnimateBubble1();
+        //AnimateBubble1Growth();
 
-        AnimateBubble();
+        pression = pressionInitiale;
+        startTimeOffset = Random.Range(0f, Mathf.PI * 2); // Décalage aléatoire
+        AnimateBubble1Growth2();
     }
+
 
     void Update()
     {
         // Croissance et déplacement de la bulle (déjà existants)
-        //transform.localScale += Vector3.one * growthRate * Time.deltaTime;
+        transform.localScale += Vector3.one * growthRate * Time.deltaTime;
 
 
         // Déplacement vers le haut (via la physique ou la translation)
@@ -110,22 +131,22 @@ public class Bubble : MonoBehaviour
         if (GameManager.Instance != null && GameManager.Instance.gameIsOver)
             return;
 
-        Debug.Log("Bulle cliquée à : " + transform.position);
+        Debug.Log($"Bulle cliquée : {gameObject.name}, génération : {generation}");
 
         // Selon le type de bulle, exécuter le pouvoir spécial
-        switch (bubbleType)
+        switch (bubble1Type)
         {
-            case BubbleType.Normal:
+            case Bubble1Type.Normal:
                 HandleNormalBubble();
                 break;
-            case BubbleType.Swipe:
+            case Bubble1Type.Swipe:
                 // Active le mode swipe pour 3 secondes dans le GameManager
                 GameManager.Instance.ActivateSwipeMode(3f);
                 break;
-            case BubbleType.Explosive:
+            case Bubble1Type.Explosive:
                 HandleExplosiveBubble();
                 break;
-            case BubbleType.Freeze:
+            case Bubble1Type.Freeze:
                 // Active le mode freeze (ralentissement) pour 3 secondes
                 GameManager.Instance.ActivateFreezeMode(3f);
                 break;
@@ -143,7 +164,7 @@ public class Bubble : MonoBehaviour
         DOTween.Kill(transform, true);
 
         // Pour les bulles normales, on génère les enfants (les bulles spéciales ne spawnent pas d'enfants)
-        if (bubbleType == BubbleType.Normal && bubblePrefab != null && numberOfChildBubbles > 0 && generation < maxGenerations)
+        if (bubble1Type == Bubble1Type.Normal && bubblePrefab != null && numberOfChildBubbles > 0 && generation < maxGenerations)
         {
             for (int i = 0; i < numberOfChildBubbles; i++)
             {
@@ -153,22 +174,41 @@ public class Bubble : MonoBehaviour
                 // Appliquer une réduction d'échelle aux enfants
                 childBubble.transform.localScale = transform.localScale * childScaleFactor;
 
-                Bubble childBubbleScript = childBubble.GetComponent<Bubble>();
+                Bubble1 childBubbleScript = childBubble.GetComponent<Bubble1>();
                 if (childBubbleScript != null)
                 {
                     childBubbleScript.generation = generation + 1;
                     childBubbleScript.growthRate = growthRate;
-                    childBubbleScript.bubbleType = BubbleType.Normal; // Toujours une bulle normale
-                    childBubbleScript.SetBubbleAppearance(); // Met à jour l'apparence en conséquence
+                    childBubbleScript.bubble1Type = Bubble1Type.Normal; // Toujours une bulle normale
+                    childBubbleScript.SetBubble1Appearance(); // Met à jour l'apparence en conséquence
                 }
 
                 Rigidbody2D childRb = childBubble.GetComponent<Rigidbody2D>();
                 if (childRb != null)
                 {
                     childRb.gravityScale = 0;
-                    Vector2 randomDirection = Random.insideUnitCircle.normalized;
-                    childRb.AddForce(randomDirection * explosionForce);
+
+                    childRb.isKinematic = false; // ✅ Permet au moteur physique d'agir immédiatement
+                    childRb.collisionDetectionMode = CollisionDetectionMode2D.Continuous; // ✅ Prévient les collisions ratées
+
+
+                    // Vecteur directionnel qui pousse la bulle loin du parent
+                    Vector2 directionAwayFromParent = ((Vector2)childBubble.transform.position - (Vector2)transform.position).normalized;
+
+                    // Si la direction est (0,0), on prend une direction aléatoire
+                    if (directionAwayFromParent == Vector2.zero)
+                        directionAwayFromParent = Random.insideUnitCircle.normalized;
+
+                    // Appliquer une impulsion initiale
+                    childRb.AddForce(directionAwayFromParent * explosionForce, ForceMode2D.Impulse);
+                    
+
+                    // Animation DOtween pour améliorer l'effet de dispersion
+                    childBubble.transform.DOMove((Vector2)childBubble.transform.position + directionAwayFromParent * 0.5f, 0.5f)
+                        .SetEase(Ease.OutQuad);
                 }
+
+
             }
         }
 
@@ -208,7 +248,7 @@ public class Bubble : MonoBehaviour
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
                 foreach (Collider2D col in colliders)
                 {
-                    Bubble bubble = col.GetComponent<Bubble>();
+                    Bubble1 bubble = col.GetComponent<Bubble1>();
                     if (bubble != null && bubble != this)
                     {
                         Destroy(bubble.gameObject);
@@ -248,50 +288,40 @@ public class Bubble : MonoBehaviour
         transform.position = Camera.main.ViewportToWorldPoint(viewportPos);
     }
 
-    void AnimateBubble()
+
+    void AnimateBubble1Growth2()
     {
-        if (this == null || transform == null)
-        {
-            Debug.LogWarning("Échec de l'animation : l'objet ou son transform est null !");
-            return;
-        }
-        Sequence seq = DOTween.Sequence();
 
-        // Contraction sur X, expansion sur Y
-        seq.Append(transform.DOScaleX(0.95f, shrinkDuration).SetEase(Ease.InOutQuad))
-           .Join(transform.DOScaleY(1.05f, shrinkDuration).SetEase(Ease.InOutQuad));
 
-        // Expansion sur X, contraction sur Y
-        seq.Append(transform.DOScaleX(1.05f, growDuration).SetEase(Ease.InOutQuad))
-           .Join(transform.DOScaleY(0.95f, growDuration).SetEase(Ease.InOutQuad));
+        // Oscillation latérale naturelle avec Perlin Noise et décalage
+        float oscillationX = Mathf.PerlinNoise(Time.time * frequenceOscillation + startTimeOffset, 0) * 2 - 1;
+        rb.velocity = new Vector2(oscillationX * amplitudeOscillation, rb.velocity.y);
 
-        // Boucle infinie pour répéter l'effet
-        seq.SetLoops(-1, LoopType.Yoyo);
+        // Gestion de la pression et du grossissement
+        pression = Mathf.Max(pressionMinimale, pression - growthRate * Time.fixedDeltaTime);
+        float facteurTaille = Mathf.Lerp(1f, 2f, (pressionInitiale - pression) / pressionInitiale);
 
-        // Ajouter la croissance continue via DOTween
-        DOTween.To(() => transform.localScale,
-                   x => transform.localScale = x,
-                   transform.localScale * growthRate, // Taille max sur la durée de vie
-                   5f) // Durée totale de la montée
-              .SetEase(Ease.Linear)
-              .SetLoops(-1, LoopType.Incremental); // Boucle pour un agrandissement progressif
+        // **Contraction indépendante**
+        float contraction = 1f + Mathf.Sin(Time.time * frequenceContraction + startTimeOffset) * amplitudeContraction;
+        transform.localScale = new Vector3(facteurTaille * contraction, facteurTaille / contraction, 1);
     }
 
-    void SetBubbleAppearance()
+
+    void SetBubble1Appearance()
     {
-        switch (bubbleType)
+        switch (bubble1Type)
         {
-            case BubbleType.Swipe:
-                GetComponentInChildren<SpriteRenderer>().color = Color.green;
+            case Bubble1Type.Swipe:
+                GetComponent<SpriteRenderer>().color = Color.green;
                 break;
-            case BubbleType.Explosive:
-                GetComponentInChildren<SpriteRenderer>().color = Color.red;
+            case Bubble1Type.Explosive:
+                GetComponent<SpriteRenderer>().color = Color.red;
                 break;
-            case BubbleType.Freeze:
-                GetComponentInChildren<SpriteRenderer>().color = Color.blue;
+            case Bubble1Type.Freeze:
+                GetComponent<SpriteRenderer>().color = Color.blue;
                 break;
             default:
-                GetComponentInChildren<SpriteRenderer>().color = Color.white;
+                GetComponent<SpriteRenderer>().color = Color.white;
                 break;
         }
     } 

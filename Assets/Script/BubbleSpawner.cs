@@ -21,9 +21,15 @@ public class BubbleSpawner : MonoBehaviour
     private float timer;
     private bool isSpawning = true;
 
+    public enum BubbleType { Normal, Swipe, Explosive, Freeze }
+
+    private void Start()
+    {
+        SpawnBubble();
+    }
+
     void Update()
     {
-        // Vérifier si le jeu est terminé avant de continuer
         if (GameManager.Instance != null && GameManager.Instance.gameIsOver)
         {
             isSpawning = false;
@@ -43,7 +49,6 @@ public class BubbleSpawner : MonoBehaviour
         }
     }
 
-
     void SpawnBubble()
     {
         if (bubblePrefab == null)
@@ -52,18 +57,43 @@ public class BubbleSpawner : MonoBehaviour
             return;
         }
 
-        // Calcul d'une position X aléatoire dans la zone de spawn
         float randomX = Random.Range(-spawnWidth / 2, spawnWidth / 2);
         Vector2 spawnPosition = new Vector2(randomX, spawnY);
 
-        // Instanciation de la bulle
-        Instantiate(bubblePrefab, spawnPosition, Quaternion.identity);
+        GameObject newBubble = Instantiate(bubblePrefab, spawnPosition, Quaternion.identity);
+
+        BubbleType bubbleType = GetRandomBubbleType(); // Nouvelle logique pour obtenir un type aléatoire
+
+        BullePhysique bubblePhysique = newBubble.GetComponent<BullePhysique>();
+        if (bubblePhysique != null)
+        {
+            bubblePhysique.SetBubbleType(bubbleType);
+        }
+    }
+
+    public BubbleType GetRandomBubbleType()
+    {
+        float chance = Random.value;
+
+        if (chance < 0.15f) // 15% de chance d'avoir une bulle spéciale
+        {
+            float specialChance = Random.value;
+
+            if (specialChance < 0.33f)
+                return BubbleType.Swipe;
+            else if (specialChance < 0.67f)
+                return BubbleType.Explosive;
+            else
+                return BubbleType.Freeze;
+        }
+
+        return BubbleType.Normal;
     }
 
     public void RestartSpawner()
     {
         isSpawning = true;
         timer = 0f;
-        spawnInterval = 1.5f; // Réinitialiser à l'intervalle de départ
+        spawnInterval = 1.5f;
     }
 }

@@ -11,11 +11,11 @@ GameObject:
   - component: {fileID: 8597483693279239290}
   - component: {fileID: 6295004120147716516}
   - component: {fileID: -7248510289926548089}
-  - component: {fileID: 13569105770311083}
   - component: {fileID: 4060473367416429035}
+  - component: {fileID: 8331711777384155568}
   m_Layer: 0
-  m_Name: Circle
-  m_TagString: Untagged
+  m_Name: Bubble1
+  m_TagString: Bubble1
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -122,32 +122,6 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.5
---- !u!114 &13569105770311083
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5742255632995059589}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 58df1289cb15a4e4c9a59dcd79df4339, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bubbleType: 0
-  speed: 0.5
-  basePoints: 10
-  growthRate: 1.5
-  generation: 0
-  maxGenerations: 2
-  bubblePrefab: {fileID: 5742255632995059589}
-  numberOfChildBubbles: 2
-  childScaleFactor: 0.5
-  explosionForce: 100
-  spawnOffsetRadius: 1.5
-  popEffect: {fileID: 3470074476890878589, guid: 88d9053b927862841860a2a5e3f71b04, type: 3}
-  shrinkDuration: 2.2
-  growDuration: 2.5
 --- !u!50 &4060473367416429035
 Rigidbody2D:
   serializedVersion: 4
@@ -160,7 +134,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 0.1
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 0
@@ -174,4 +148,34 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
+--- !u!114 &8331711777384155568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5742255632995059589}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af08a3751861d014ca999402ba277a85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bubble1Type: 0
+  speed: 0.5
+  basePoints: 10
+  growthRate: 0.5
+  generation: 0
+  maxGenerations: 2
+  bubblePrefab: {fileID: 5742255632995059589}
+  numberOfChildBubbles: 2
+  childScaleFactor: 0.5
+  explosionForce: 100
+  spawnOffsetRadius: 0.3
+  popEffect: {fileID: 3470074476890878589, guid: 88d9053b927862841860a2a5e3f71b04, type: 3}
+  amplitudeOscillation: 1
+  frequenceOscillation: 1
+  pressionInitiale: 1
+  pressionMinimale: 0.1
+  frequenceContraction: 1
+  amplitudeContraction: 0.5

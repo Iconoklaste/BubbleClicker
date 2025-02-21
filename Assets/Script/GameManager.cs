@@ -3,6 +3,9 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
+
+
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -83,43 +86,62 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    Rect GetGameArea()
+    {
+        Camera cam = Camera.main;
+        // Convertir les coins du viewport en coordonnées monde
+        Vector3 bottomLeft = cam.ViewportToWorldPoint(new Vector3(0, 0, cam.nearClipPlane));
+        Vector3 topRight = cam.ViewportToWorldPoint(new Vector3(1, 1, cam.nearClipPlane));
+
+        float width = topRight.x - bottomLeft.x;
+        float height = topRight.y - bottomLeft.y;
+
+        // Appliquer la marge de confinement sur chaque côté
+        // float confinedWidth = width * (1 - 2 * confinementMargin);
+        // float confinedHeight = height * (1 - 2 * confinementMargin);
+        float confinedWidth = width;
+        float confinedHeight = height;
+
+
+        // Calculer le centre de l'écran
+        float centerX = bottomLeft.x + width / 2;
+        float centerY = bottomLeft.y + height / 2;
+
+        // Retourner la zone confinée en Rect
+        return new Rect(centerX - confinedWidth / 2, centerY - confinedHeight / 2, confinedWidth, confinedHeight);
+    }
+
     void CheckBubbleCoverage()
     {
-        // Si le jeu est terminé, ne pas recalculer
         if (gameIsOver)
             return;
 
-        // Calculer l'aire totale occupée par les bulles
-        Bubble[] bubbles = FindObjectsOfType<Bubble>();
+        BullePhysique[] bubbles = FindObjectsOfType<BullePhysique>();
         float totalBubbleArea = 0f;
-        foreach (Bubble b in bubbles)
+        foreach (BullePhysique b in bubbles)
         {
-            float diameter = b.transform.localScale.x;
+            // Utilise le SpriteRenderer de l'enfant pour obtenir la taille réelle affichée
+            float diameter = b.GetComponent<SpriteRenderer>().bounds.size.x;
             float radius = diameter / 2f;
             totalBubbleArea += Mathf.PI * radius * radius;
         }
 
-        // Calculer la taille de l'écran en unités monde (pour une caméra orthographique)
-        float screenHeight = Camera.main.orthographicSize * 2f;
-        float screenWidth = screenHeight * Camera.main.aspect;
+        // Calculer la zone de jeu confinée automatiquement
+        Rect gameArea = GetGameArea();
+        float confinedArea = gameArea.width * gameArea.height;
 
-        // Définir la zone confinée en appliquant la marge sur chaque côté
-        float confinedWidth = screenWidth * (1 - 2 * confinementMargin);
-        float confinedHeight = screenHeight * (1 - 2 * confinementMargin);
-        float confinedArea = confinedWidth * confinedHeight;
-
-        // Calcul du taux de couverture par rapport à la zone confinée
         coveragePercentage = totalBubbleArea / confinedArea;
 
-        // Mise à jour de l'UI
+        //Debug.Log($"Game Area: {gameArea} - Total Bubble Area: {totalBubbleArea:F2}, Confined Area: {confinedArea:F2}, Coverage: {coveragePercentage * 100:F2}%");
+
         UpdateUI();
 
-        // Si le taux de couverture dépasse txCouvertureMax (ce qui correspond à 100% affiché), terminer la partie
         if (coveragePercentage >= txCouvertureMax)
         {
             GameOver();
         }
     }
+
 
     public void GameOver()
     {

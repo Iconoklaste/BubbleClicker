@@ -1347,7 +1347,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &922910106
 Transform:
   m_ObjectHideFlags: 0
@@ -1476,11 +1476,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cd62c64680f48b47ac2f18d5a703d88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bubblePrefab: {fileID: 790152627024270747, guid: 3158cbc779bce1d4db75d4fba3f30a29, type: 3}
-  spawnInterval: 1.5
+  bubblePrefab: {fileID: 4483340503199843141, guid: 04e446c7032fcd247bb1e6408e5e1e73, type: 3}
+  spawnInterval: 5
   spawnWidth: 5
   spawnY: -5
-  spawnAcceleration: 0.01
+  spawnAcceleration: 0.05
   minSpawnInterval: 0.75
 --- !u!212 &1200513875
 SpriteRenderer:
@@ -1740,9 +1740,11 @@ MonoBehaviour:
   coverageText: {fileID: 1169237257}
   scoreText: {fileID: 1275426344}
   gameIsOver: 0
-  txCouvertureMax: 0.5
+  txCouvertureMax: 1.75
   confinementMargin: 0.1
   bubbleSpawner: {fileID: 1200513874}
+  swipeModeActive: 0
+  freezeModeActive: 0
 --- !u!4 &1642330073
 Transform:
   m_ObjectHideFlags: 0
