@@ -19,17 +19,17 @@ public class GameManager : MonoBehaviour
     public bool gameIsOver = false;
     public float txCouvertureMax = 0.6f;
     private int score = 0;
-    // Ce champ stocke le taux de couverture calculé (par rapport à la zone confinée)
+    // Ce champ stocke le taux de couverture calculï¿½ (par rapport ï¿½ la zone confinï¿½e)
     private float coveragePercentage = 0f;
 
     [Header("Confinement")]
-    // Marge à appliquer sur les bords (10% par défaut)
+    // Marge ï¿½ appliquer sur les bords (10% par dï¿½faut)
     public float confinementMargin = 0.1f;
 
     [Header("Spawner Reference")]
     public BubbleSpawner bubbleSpawner;
 
-    // Ces booléens pourront être utilisés par d'autres scripts pour adapter le gameplay
+    // Ces boolï¿½ens pourront ï¿½tre utilisï¿½s par d'autres scripts pour adapter le gameplay
     public bool swipeModeActive = false;
     public bool freezeModeActive = false;
 
@@ -43,7 +43,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        Time.timeScale = 1f; // Le jeu démarre actif
+        Time.timeScale = 1f; // Le jeu dï¿½marre actif
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
         gameIsOver = false;
@@ -54,7 +54,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // Mettre à jour en continu le taux de couverture si le jeu n'est pas terminé
+        // Mettre ï¿½ jour en continu le taux de couverture si le jeu n'est pas terminï¿½
         if (!gameIsOver)
         {
             CheckBubbleCoverage();
@@ -80,8 +80,8 @@ public class GameManager : MonoBehaviour
         if (coverageText != null)
         {
             // Convertir le taux de couverture en pourcentage
-            // Ici, on considère que lorsque coveragePercentage atteint txCouvertureMax, c'est 100% affiché
-            float displayedPercentage = Mathf.Clamp((coveragePercentage / txCouvertureMax) * 100f, 0f, 100f);
+            // Ici, on considï¿½re que lorsque coveragePercentage atteint txCouvertureMax, c'est 100% affichï¿½
+            float displayedPercentage = Mathf.Clamp((coveragePercentage) * 100f, 0f, 100f);
             coverageText.text = "Couverture: " + displayedPercentage.ToString("F1") + "%";
         }
     }
@@ -89,25 +89,25 @@ public class GameManager : MonoBehaviour
     Rect GetGameArea()
     {
         Camera cam = Camera.main;
-        // Convertir les coins du viewport en coordonnées monde
+        // Convertir les coins du viewport en coordonnï¿½es monde
         Vector3 bottomLeft = cam.ViewportToWorldPoint(new Vector3(0, 0, cam.nearClipPlane));
         Vector3 topRight = cam.ViewportToWorldPoint(new Vector3(1, 1, cam.nearClipPlane));
 
         float width = topRight.x - bottomLeft.x;
         float height = topRight.y - bottomLeft.y;
 
-        // Appliquer la marge de confinement sur chaque côté
+        // Appliquer la marge de confinement sur chaque cï¿½tï¿½
         // float confinedWidth = width * (1 - 2 * confinementMargin);
         // float confinedHeight = height * (1 - 2 * confinementMargin);
         float confinedWidth = width;
         float confinedHeight = height;
 
 
-        // Calculer le centre de l'écran
+        // Calculer le centre de l'ï¿½cran
         float centerX = bottomLeft.x + width / 2;
         float centerY = bottomLeft.y + height / 2;
 
-        // Retourner la zone confinée en Rect
+        // Retourner la zone confinï¿½e en Rect
         return new Rect(centerX - confinedWidth / 2, centerY - confinedHeight / 2, confinedWidth, confinedHeight);
     }
 
@@ -116,17 +116,17 @@ public class GameManager : MonoBehaviour
         if (gameIsOver)
             return;
 
-        BullePhysique[] bubbles = FindObjectsOfType<BullePhysique>();
+        BulleShaderController[] bubbles = FindObjectsOfType<BulleShaderController>();
         float totalBubbleArea = 0f;
-        foreach (BullePhysique b in bubbles)
+        foreach (BulleShaderController b in bubbles)
         {
-            // Utilise le SpriteRenderer de l'enfant pour obtenir la taille réelle affichée
+            // Utilise le SpriteRenderer de l'enfant pour obtenir la taille rï¿½elle affichï¿½e
             float diameter = b.GetComponent<SpriteRenderer>().bounds.size.x;
             float radius = diameter / 2f;
             totalBubbleArea += Mathf.PI * radius * radius;
         }
 
-        // Calculer la zone de jeu confinée automatiquement
+        // Calculer la zone de jeu confinï¿½e automatiquement
         Rect gameArea = GetGameArea();
         float confinedArea = gameArea.width * gameArea.height;
 
@@ -165,14 +165,14 @@ public class GameManager : MonoBehaviour
         coveragePercentage = 0f;
         UpdateUI();
 
-        // Détruire toutes les bulles présentes en scène (assurez-vous qu'elles portent le tag "Bubble")
+        // Dï¿½truire toutes les bulles prï¿½sentes en scï¿½ne (assurez-vous qu'elles portent le tag "Bubble")
         GameObject[] bubbles = GameObject.FindGameObjectsWithTag("Bubble");
         foreach (GameObject bubble in bubbles)
         {
             Destroy(bubble);
         }
 
-        // Réinitialiser le spawner
+        // Rï¿½initialiser le spawner
         if (bubbleSpawner != null)
         {
             bubbleSpawner.RestartSpawner();
@@ -191,10 +191,10 @@ public class GameManager : MonoBehaviour
         // Ici, on peut ajouter le code pour activer les effets visuels ou logiques du mode Swipe.
         yield return new WaitForSeconds(duration);
         swipeModeActive = false;
-        Debug.Log("Mode Swipe désactivé.");
+        Debug.Log("Mode Swipe dï¿½sactivï¿½.");
     }
 
-    // Méthode d'activation du mode Freeze
+    // Mï¿½thode d'activation du mode Freeze
     public void ActivateFreezeMode(float duration)
     {
         Debug.Log("Activation du mode Freeze pour " + duration + " secondes.");
@@ -205,11 +205,11 @@ public class GameManager : MonoBehaviour
     {
         freezeModeActive = true;
         // Par exemple, vous pouvez ralentir le temps de jeu pour les bulles (mais attention Time.timeScale affecte tout)
-        // Ou bien, appliquer un multiplicateur sur la vitesse de déplacement des bulles
+        // Ou bien, appliquer un multiplicateur sur la vitesse de dï¿½placement des bulles
         // Ici on simule simplement l'effet par un Debug.Log
         yield return new WaitForSeconds(duration);
         freezeModeActive = false;
-        Debug.Log("Mode Freeze désactivé.");
+        Debug.Log("Mode Freeze dï¿½sactivï¿½.");
     }
 
 }

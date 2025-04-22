@@ -752,12 +752,14 @@ MonoBehaviour:
   gameSource: {fileID: 215104512}
   playerSource: {fileID: 255331800}
   audioData:
-  - clip: {fileID: 8300000, guid: 779f2263e383e234b8e053c103f1fac7, type: 3}
+  - clip: {fileID: 8300000, guid: 58eee1d076e5e1e40b75993f5419f674, type: 3}
     type: 0
-  - clip: {fileID: 8300000, guid: 779f2263e383e234b8e053c103f1fac7, type: 3}
+  - clip: {fileID: 8300000, guid: 1d83bc90cb4562a47b9233db0aa3ed81, type: 3}
     type: 1
   - clip: {fileID: 8300000, guid: 779f2263e383e234b8e053c103f1fac7, type: 3}
     type: 2
+  - clip: {fileID: 8300000, guid: 7471f36b2ac73e84b8648a6b49084181, type: 3}
+    type: 3
 --- !u!4 &501455143
 Transform:
   m_ObjectHideFlags: 0
@@ -1476,12 +1478,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cd62c64680f48b47ac2f18d5a703d88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bubblePrefab: {fileID: 4483340503199843141, guid: 04e446c7032fcd247bb1e6408e5e1e73, type: 3}
+  bubblePrefab: {fileID: 8644719750424515103, guid: ebafb4fa3e870814cb0c01d2223c7621, type: 3}
   spawnInterval: 5
   spawnWidth: 5
-  spawnY: -5
   spawnAcceleration: 0.05
-  minSpawnInterval: 0.75
+  minSpawnInterval: 1
 --- !u!212 &1200513875
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -1543,7 +1544,7 @@ Transform:
   m_GameObject: {fileID: 1200513873}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -5.06, z: 0}
+  m_LocalPosition: {x: 0, y: -5.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1740,7 +1741,7 @@ MonoBehaviour:
   coverageText: {fileID: 1169237257}
   scoreText: {fileID: 1275426344}
   gameIsOver: 0
-  txCouvertureMax: 1.75
+  txCouvertureMax: 0.75
   confinementMargin: 0.1
   bubbleSpawner: {fileID: 1200513874}
   swipeModeActive: 0

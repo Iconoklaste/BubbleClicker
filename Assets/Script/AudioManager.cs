@@ -6,7 +6,8 @@ public enum AudioType
 {
     Pop,
     Swipe,
-    Dead
+    Dead,
+    BubbleSpawn
 }
 
 public enum AudioSourceType
