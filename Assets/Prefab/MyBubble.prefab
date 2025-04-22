@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 4097835045550807558}
   - component: {fileID: 7337741721918200832}
   - component: {fileID: 9179144802128485478}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: MyBubble
-  m_TagString: Untagged
+  m_TagString: Bubble
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -119,9 +119,9 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -0.09727669, y: 0}
   serializedVersion: 2
-  m_Radius: 1.305
+  m_Radius: 1.2077234
 --- !u!50 &7337741721918200832
 Rigidbody2D:
   serializedVersion: 4
@@ -161,7 +161,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c63bec29c3e292c4689b036a4db73af2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vitesseMontee: 0.8
+  vitesseMontee: 0.6
   initialScale: 0.25
   growthFactorSpeed: 0.2
   shaderRotationSpeed: 10
@@ -175,6 +175,9 @@ MonoBehaviour:
   childScaleFactor: 0.454
   explosionForce: 100
   spawnOffsetRadius: 0.2
+  bubbleLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
   popEffect: {fileID: 3470074476890878589, guid: 88d9053b927862841860a2a5e3f71b04, type: 3}
   generation: 0
   maxGenerations: 4

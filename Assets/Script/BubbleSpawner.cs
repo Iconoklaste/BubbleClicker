@@ -149,6 +149,6 @@ public class BubbleSpawner : MonoBehaviour
     {
         isSpawning = true;
         timer = 0f;
-        spawnInterval = 1.5f;
+        spawnInterval = minSpawnInterval;
     }
 }

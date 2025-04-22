@@ -14,6 +14,7 @@ public class GameManager : MonoBehaviour
     public GameObject gameOverPanel;
     public Text coverageText;
     public Text scoreText;
+    public Camera mainCamera;
 
     [Header("Game Variables")]
     public bool gameIsOver = false;
@@ -36,10 +37,30 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null)
+        {
             Instance = this;
+            // DontDestroyOnLoad(gameObject); // Si nécessaire
+        }
         else
+        {
             Destroy(gameObject);
+        }
+
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main;
+            if (mainCamera == null)
+            {
+                Debug.LogError("GameManager: Aucune caméra principale trouvée ou assignée !");
+            }
+        }
+         // Assure-toi que la caméra est orthographique pour cette implémentation de GetGameArea
+        if (mainCamera != null && !mainCamera.orthographic)
+        {
+             Debug.LogWarning("GameManager: La caméra principale n'est pas orthographique. GetGameArea suppose une caméra orthographique.");
+        }
     }
+
 
     void Start()
     {
@@ -52,14 +73,16 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
-    void Update()
+    void FixedUpdate()
     {
-        // Mettre � jour en continu le taux de couverture si le jeu n'est pas termin�
+        // Appelle CheckBubbleCoverage ici, au rythme de la physique
         if (!gameIsOver)
         {
             CheckBubbleCoverage();
         }
     }
+
+
 
     public void AddScore(int pointsToAdd)
     {
@@ -86,56 +109,91 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    Rect GetGameArea()
+    public Rect GetTotalGameArea()
     {
-        Camera cam = Camera.main;
-        // Convertir les coins du viewport en coordonn�es monde
-        Vector3 bottomLeft = cam.ViewportToWorldPoint(new Vector3(0, 0, cam.nearClipPlane));
-        Vector3 topRight = cam.ViewportToWorldPoint(new Vector3(1, 1, cam.nearClipPlane));
+        if (mainCamera == null || !mainCamera.orthographic)
+        {
+            Debug.LogError("GetTotalGameArea: Nécessite une caméra principale orthographique assignée.");
+            return new Rect(0, 0, 0, 0); // Retourne un Rect vide en cas d'erreur
+        }
 
-        float width = topRight.x - bottomLeft.x;
-        float height = topRight.y - bottomLeft.y;
+        // Pour une caméra orthographique :
+        float screenHeightWorld = mainCamera.orthographicSize * 2f;
+        float screenWidthWorld = screenHeightWorld * mainCamera.aspect;
 
-        // Appliquer la marge de confinement sur chaque c�t�
-        // float confinedWidth = width * (1 - 2 * confinementMargin);
-        // float confinedHeight = height * (1 - 2 * confinementMargin);
-        float confinedWidth = width;
-        float confinedHeight = height;
+        // Trouve le coin inférieur gauche en coordonnées monde
+        // (Suppose que la caméra est centrée ou utilise sa position)
+        Vector3 cameraBottomLeft = mainCamera.transform.position -
+                                   new Vector3(screenWidthWorld / 2f, screenHeightWorld / 2f, 0);
 
-
-        // Calculer le centre de l'�cran
-        float centerX = bottomLeft.x + width / 2;
-        float centerY = bottomLeft.y + height / 2;
-
-        // Retourner la zone confin�e en Rect
-        return new Rect(centerX - confinedWidth / 2, centerY - confinedHeight / 2, confinedWidth, confinedHeight);
+        // Crée le Rect (x, y, largeur, hauteur)
+        return new Rect(cameraBottomLeft.x, cameraBottomLeft.y, screenWidthWorld, screenHeightWorld);
     }
+
+
 
     void CheckBubbleCoverage()
     {
+        // gameIsOver est déjà vérifié dans Update, mais une double vérif ne fait pas de mal
         if (gameIsOver)
             return;
 
+        // Trouve toutes les bulles actives
         BulleShaderController[] bubbles = FindObjectsOfType<BulleShaderController>();
         float totalBubbleArea = 0f;
+
+        // Calcule l'aire de chaque bulle
         foreach (BulleShaderController b in bubbles)
         {
-            // Utilise le SpriteRenderer de l'enfant pour obtenir la taille r�elle affich�e
-            float diameter = b.GetComponent<SpriteRenderer>().bounds.size.x;
-            float radius = diameter / 2f;
-            totalBubbleArea += Mathf.PI * radius * radius;
+            // --- MODIFICATION ICI ---
+            Collider2D bubbleCollider = b.GetComponent<Collider2D>();
+            if (bubbleCollider != null)
+            {
+                // bounds.size donne les dimensions du "bounding box" en unités du monde
+                // Pour un cercle/une sphère, x et y devraient être (presque) égaux au diamètre
+                float worldDiameter = bubbleCollider.bounds.size.x;
+                float worldRadius = worldDiameter / 2f;
+                float area = Mathf.PI * worldRadius * worldRadius;
+                // Debug.Log($"Bubble: {b.gameObject.name}, Bounds.size.x: {worldDiameter:F2}, Area: {area:F2}"); // Log mis à jour
+                totalBubbleArea += area;
+            }
+            else
+            {
+                // Optionnel : Gérer le cas où une bulle n'a pas de collider
+                Debug.LogWarning($"Bubble {b.gameObject.name} has no Collider2D, cannot calculate its area accurately.");
+                // Vous pourriez essayer d'utiliser le Renderer, mais le Collider est souvent plus précis pour la physique/zone
+                // Renderer renderer = b.GetComponent<Renderer>();
+                // if (renderer != null) { ... utiliser renderer.bounds.size.x ... }
+            }
+            // --- FIN MODIFICATION ---
+        }
+        Debug.Log($"Found {bubbles.Length} active bubbles. Aire totale des bulles : {totalBubbleArea:F2}");
+
+        // --- Utilise l'aire TOTALE de jeu ---
+        Rect totalGameAreaRect = GetTotalGameArea();
+        float totalPlayableArea = totalGameAreaRect.width * totalGameAreaRect.height;
+        // --- Fin de la partie importante ---
+
+        // Calcule le pourcentage (avec sécurité pour éviter division par zéro)
+        if (totalPlayableArea > Mathf.Epsilon) // Utilise Epsilon pour comparer les flottants
+        {
+            coveragePercentage = totalBubbleArea / totalPlayableArea;
+        }
+        else
+        {
+            coveragePercentage = 0f;
+            // Optionnel: Log si l'aire est nulle/trop petite
+            // Debug.LogWarning("CheckBubbleCoverage: totalPlayableArea is zero or negative!");
         }
 
-        // Calculer la zone de jeu confin�e automatiquement
-        Rect gameArea = GetGameArea();
-        float confinedArea = gameArea.width * gameArea.height;
+        // Limite le pourcentage entre 0 et 1 (au cas où, bien que > 1 soit le but de GameOver)
+        coveragePercentage = Mathf.Clamp01(coveragePercentage);
 
-        coveragePercentage = totalBubbleArea / confinedArea;
+        Debug.Log($"Total Bubble Area: {totalBubbleArea:F2}, Total Playable Area: {totalPlayableArea:F2}, Coverage: {coveragePercentage * 100:F2}%");
 
-        //Debug.Log($"Game Area: {gameArea} - Total Bubble Area: {totalBubbleArea:F2}, Confined Area: {confinedArea:F2}, Coverage: {coveragePercentage * 100:F2}%");
+        UpdateUI(); // Met à jour l'interface utilisateur si nécessaire
 
-        UpdateUI();
-
+        // Vérifie si la limite est dépassée
         if (coveragePercentage >= txCouvertureMax)
         {
             GameOver();
