@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using TMPro;
 
 
 
@@ -12,20 +13,30 @@ public class GameManager : MonoBehaviour
 
     [Header("UI Elements")]
     public GameObject gameOverPanel;
-    public Text coverageText;
+    //public Text coverageText;
     public Text scoreText;
+    public Text bubbleText;
+    public Slider coverageSlider;
     public Camera mainCamera;
+
 
     [Header("Game Variables")]
     public bool gameIsOver = false;
     public float txCouvertureMax = 0.6f;
     private int score = 0;
+    private int nb_bulles = 0;
     // Ce champ stocke le taux de couverture calcul� (par rapport � la zone confin�e)
     private float coveragePercentage = 0f;
+    // La valeur utilisée pour l'affichage dans la barre de vie, qui sera lissée
+    private float displayedCoveragePercentage;
+    // Vitesse à laquelle la barre se met à jour visuellement
+    public float coverageSmoothingSpeed = 5.0f;
 
-    [Header("Confinement")]
+    //[Header("Confinement")]
     // Marge � appliquer sur les bords (10% par d�faut)
-    public float confinementMargin = 0.1f;
+    //public float confinementMargin = 0.1f;
+
+    private AudioManager audioManagerInstance;
 
     [Header("Spawner Reference")]
     public BubbleSpawner bubbleSpawner;
@@ -59,6 +70,14 @@ public class GameManager : MonoBehaviour
         {
              Debug.LogWarning("GameManager: La caméra principale n'est pas orthographique. GetGameArea suppose une caméra orthographique.");
         }
+        // Initialiser la valeur affichée dans la barre de vie à la valeur réelle au démarrage
+        displayedCoveragePercentage = coveragePercentage;
+         // Validation importante pour éviter les divisions par zéro ou logiques étranges
+         if (txCouvertureMax <= 0f)
+         {
+             Debug.LogError("txCouvertureMax doit être supérieur à 0 ! Réglage à 1.0f par défaut.");
+             txCouvertureMax = 1.0f;
+         }
     }
 
 
@@ -69,6 +88,7 @@ public class GameManager : MonoBehaviour
             gameOverPanel.SetActive(false);
         gameIsOver = false;
         score = 0;
+        nb_bulles = 0;
         coveragePercentage = 0f;
         UpdateUI();
     }
@@ -80,6 +100,19 @@ public class GameManager : MonoBehaviour
         {
             CheckBubbleCoverage();
         }
+
+        // --- Lissage de la valeur de couverture ---
+        // Fait tendre progressivement la valeur affichée vers la valeur réelle
+        // Utilise Lerp (Linear Interpolation) pour un effet smooth
+        displayedCoveragePercentage = Mathf.Lerp(
+            displayedCoveragePercentage,
+            coveragePercentage,
+            Time.deltaTime * coverageSmoothingSpeed
+        );
+
+        // --- Mise à jour continue de l'UI ---
+        // Appelle UpdateUI à chaque frame pour refléter le lissage
+        UpdateUI();
     }
 
 
@@ -93,20 +126,60 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void NbBubblePoped(int bubbleToAdd){
+        if (!gameIsOver)
+        {
+            nb_bulles += bubbleToAdd;
+            UpdateUI();
+        }
+    }
+
     void UpdateUI()
     {
+        float displayedPercentage = Mathf.Clamp((coveragePercentage) * 100f, 0f, 100f);
+        
+
         if (scoreText != null)
         {
             scoreText.text = "Score: " + score;
         }
 
-        if (coverageText != null)
+        if (bubbleText != null)
+        {
+            bubbleText.text = "Popped: " + nb_bulles;
+        }
+
+/*         if (coverageText != null)
         {
             // Convertir le taux de couverture en pourcentage
             // Ici, on consid�re que lorsque coveragePercentage atteint txCouvertureMax, c'est 100% affich�
-            float displayedPercentage = Mathf.Clamp((coveragePercentage) * 100f, 0f, 100f);
             coverageText.text = "Couverture: " + displayedPercentage.ToString("F1") + "%";
+        } */
+
+        // --- Mise à jour du Slider (affiche le % de progression VERS txCouvertureMax) ---
+        if (coverageSlider != null)
+        {
+            // 1. Calculer la progression actuelle par rapport au maximum autorisé.
+            //    Si txCouvertureMax est 0.8 et displayedCoveragePercentage est 0.4,
+            //    le ratio est 0.4 / 0.8 = 0.5 (soit 50%).
+            float progressRatio = 0f;
+            if (txCouvertureMax > 0f) // Éviter la division par zéro
+            {
+                // On s'assure que la valeur affichée ne dépasse pas le max pour ce calcul
+                float clampedDisplayed = Mathf.Min(displayedCoveragePercentage, txCouvertureMax);
+                progressRatio = clampedDisplayed / txCouvertureMax;
+            }
+
+            // 2. Convertir ce ratio (0 à 1) en pourcentage (0 à 100) pour le slider.
+            float sliderValue = progressRatio * 100f;
+
+            // 3. Clamper le résultat final entre 0 et 100 (sécurité).
+            sliderValue = Mathf.Clamp(sliderValue, 0f, 100f);
+
+            // 4. Appliquer au slider (qui doit avoir Min=0, Max=100 dans l'inspecteur).
+            coverageSlider.value = sliderValue;
         }
+
     }
 
     public Rect GetTotalGameArea()
@@ -167,7 +240,7 @@ public class GameManager : MonoBehaviour
             }
             // --- FIN MODIFICATION ---
         }
-        Debug.Log($"Found {bubbles.Length} active bubbles. Aire totale des bulles : {totalBubbleArea:F2}");
+        //Debug.Log($"Found {bubbles.Length} active bubbles. Aire totale des bulles : {totalBubbleArea:F2}");
 
         // --- Utilise l'aire TOTALE de jeu ---
         Rect totalGameAreaRect = GetTotalGameArea();
@@ -189,7 +262,7 @@ public class GameManager : MonoBehaviour
         // Limite le pourcentage entre 0 et 1 (au cas où, bien que > 1 soit le but de GameOver)
         coveragePercentage = Mathf.Clamp01(coveragePercentage);
 
-        Debug.Log($"Total Bubble Area: {totalBubbleArea:F2}, Total Playable Area: {totalPlayableArea:F2}, Coverage: {coveragePercentage * 100:F2}%");
+        //Debug.Log($"Total Bubble Area: {totalBubbleArea:F2}, Total Playable Area: {totalPlayableArea:F2}, Coverage: {coveragePercentage * 100:F2}%");
 
         UpdateUI(); // Met à jour l'interface utilisateur si nécessaire
 
@@ -210,6 +283,15 @@ public class GameManager : MonoBehaviour
             if (gameOverPanel != null)
                 gameOverPanel.SetActive(true);
             Time.timeScale = 0f;
+
+            if (audioManagerInstance != null)
+            {
+                audioManagerInstance.StopAllSounds();
+            }
+            else
+            {
+                Debug.LogWarning("GameOver: AudioManager non trouvé, impossible d'arrêter les sons.");
+            }
         }
     }
 

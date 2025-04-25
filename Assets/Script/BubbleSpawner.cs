@@ -7,13 +7,14 @@ public class BubbleSpawner : MonoBehaviour
     [Header("Configuration du Spawner")]
     [Tooltip("Prefab de la bulle � faire appara�tre.")]
     public GameObject bubblePrefab;
-    [Tooltip("Intervalle de temps entre chaque spawn.")]
-    public float spawnInterval = 1.5f;
+
     [Tooltip("Espace horizontal de spawn (en unit�s Unity).")]
     public float spawnWidth = 8f;
 
 
     [Header("Ajustement de difficult�")]
+    [Tooltip("Intervalle de temps entre chaque spawn.")]
+    public float spawnInterval = 1.5f;
     [Tooltip("R�duction de l'intervalle de spawn au fil du temps.")]
     public float spawnAcceleration = 0.01f;
     [Tooltip("Intervalle minimal entre les spawns.")]
@@ -115,8 +116,8 @@ public class BubbleSpawner : MonoBehaviour
     {
         float chance = Random.value; // Génère un nombre aléatoire entre 0.0 et 1.0
 
-        // 50% de chance d'avoir une bulle spéciale (si chance < 0.50)
-        if (chance < 0.50f)
+        // 50% de chance d'avoir une bulle spéciale (si chance < 0.15)
+        if (chance < 0.15f)
         {
             float specialChance = Random.value; // Nouveau nombre aléatoire pour choisir le type spécial
 

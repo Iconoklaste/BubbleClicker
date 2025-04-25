@@ -43,6 +43,10 @@ public class BulleShaderController : MonoBehaviour
     public int basePoints = 10;
     public BubbleType bubbleType;
 
+    [Header("UI Feedback")] // Nouvelle section dans l'inspecteur
+    public GameObject floatingTextPrefab;
+
+
     // --- Variables privées et caches ---
     private Rigidbody2D rb;
     private Camera mainCamera;
@@ -54,6 +58,7 @@ public class BulleShaderController : MonoBehaviour
     private bool hasBeenInitializedBySpawner = false;
     private float currentGrowthFactor = 1f;
     private bool isBlockedAtTop = false;
+    private Transform _foundWorldSpaceCanvasTransform;
 
     // --- Noms des propriétés Shader ---
     private static readonly int RotationSpeedID = Shader.PropertyToID("_Rotation_Speed");
@@ -85,6 +90,17 @@ public class BulleShaderController : MonoBehaviour
         bubbleSpawnerInstance = FindObjectOfType<BubbleSpawner>();
         gameManagerInstance = GameManager.Instance;
         audioManagerInstance = AudioManager.Instance;
+
+        GameObject canvasGO = GameObject.FindWithTag("FloatingTextCanvas");
+        if (canvasGO != null)
+        {
+            _foundWorldSpaceCanvasTransform = canvasGO.transform;
+            Debug.Log($"Canvas World Space trouvé via Tag: {canvasGO.name}");
+        }
+        else
+        {
+            Debug.LogError("BulleShaderController: Impossible de trouver le GameObject avec le tag 'FloatingTextCanvas' ! Assure-toi qu'il existe dans la scène et qu'il a le bon tag.");
+        }
 
         // --- Vérifications ---
         if (mainCamera == null) Debug.LogError("BulleShaderController: Camera principale non trouvée !");
@@ -142,11 +158,13 @@ void FixedUpdate()
     // 3. S'assurer que la position reste dans l'écran (surtout après l'arrêt)
     ClampPositionToScreen();
 
+    GrowOverTime();
+
     // 4. Gérer la croissance SEULEMENT si on n'est PAS bloqué en haut
-    if (!isBlockedAtTop) // <-- AJOUT DE CETTE CONDITION
+/*     if (!isBlockedAtTop) // <-- AJOUT DE CETTE CONDITION
     {
         GrowOverTime();
-    }
+    } */
     // Si isBlockedAtTop est true, la croissance est mise en pause.
     // Elle reprendra automatiquement au prochain FixedUpdate où shouldMoveUp devient true.
 }
@@ -354,28 +372,78 @@ void ClampPositionToScreen()
         switch (bubbleType) { /* ... cas inchangés ... */
             case BubbleType.Swipe: targetColor = Color.green; break;
             case BubbleType.Explosive: targetColor = Color.red; break;
-            case BubbleType.Freeze: targetColor = Color.cyan; break;
+            case BubbleType.Freeze: targetColor = Color.magenta; break;
             case BubbleType.Normal:
             default: targetColor = Color.white; break;
         }
         bubbleMaterialInstance.SetColor(ColorID, targetColor);
     }
 
-    private void OnMouseDown()
+private void OnMouseDown()
+{
+    if (gameManagerInstance != null && gameManagerInstance.gameIsOver) return;
+    Debug.Log($"Bulle cliquée : {gameObject.name}, génération : {generation}, type : {bubbleType}");
+
+    // --- AJOUT : Variable pour stocker le score à afficher ---
+    int scoreToDisplay = 0;
+    bool shouldDestroy = true; // Par défaut, la bulle est détruite
+
+    switch (bubbleType)
     {
-        // Logique de clic (inchangée)
-        if (gameManagerInstance != null && gameManagerInstance.gameIsOver) return;
-        Debug.Log($"Bulle cliquée : {gameObject.name}, génération : {generation}, type : {bubbleType}");
-        switch (bubbleType) { /* ... cas inchangés ... */
-            case BubbleType.Normal: HandleNormalBubble(); SpawnChildBubbles(); break;
-            case BubbleType.Swipe: if (gameManagerInstance != null) gameManagerInstance.ActivateSwipeMode(3f); if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Swipe, AudioSourceType.Player); break;
-            case BubbleType.Explosive: HandleExplosiveBubble(); return;
-            case BubbleType.Freeze: if (gameManagerInstance != null) gameManagerInstance.ActivateFreezeMode(3f); if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Pop, AudioSourceType.Player); break;
-            default: HandleNormalBubble(); SpawnChildBubbles(); break;
-        }
-        PlayPopEffect();
+        case BubbleType.Normal:
+            scoreToDisplay = basePoints * (generation + 1); // Calculé aussi dans HandleNormalBubble, mais ok ici pour l'affichage
+            HandleNormalBubble(); // Gère le score réel et le son
+            SpawnChildBubbles();
+            // Le texte est déjà affiché dans HandleNormalBubble
+            break; // Important: Sortir du switch après ce cas
+
+        case BubbleType.Swipe:
+            scoreToDisplay = basePoints; // Score pour le swipe
+            if (gameManagerInstance != null)
+            {
+                 gameManagerInstance.ActivateSwipeMode(3f);
+                 gameManagerInstance.AddScore(scoreToDisplay); // Ajouter le score
+                 gameManagerInstance.NbBubblePoped(1);
+            }
+            if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Swipe, AudioSourceType.Player);
+            // Afficher le texte flottant pour Swipe
+            ShowFloatingText($"+{scoreToDisplay}", transform.position, Color.green); // Couleur optionnelle
+            break;
+
+        case BubbleType.Explosive:
+            // La logique d'affichage est dans HandleExplosiveBubble
+            HandleExplosiveBubble();
+            shouldDestroy = false; // La destruction est gérée DANS HandleExplosiveBubble
+            return; // Sortir de OnMouseDown car HandleExplosiveBubble gère la destruction
+
+        case BubbleType.Freeze:
+            scoreToDisplay = basePoints; // Score pour le freeze
+             if (gameManagerInstance != null)
+             {
+                 gameManagerInstance.ActivateFreezeMode(3f);
+                 gameManagerInstance.AddScore(scoreToDisplay); // Ajouter le score
+                 gameManagerInstance.NbBubblePoped(1);
+             }
+            if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Pop, AudioSourceType.Player); // Peut-être un son spécifique ?
+            // Afficher le texte flottant pour Freeze
+            ShowFloatingText($"+{scoreToDisplay}", transform.position, Color.cyan); // Couleur optionnelle
+            break;
+
+        default: // Comportement par défaut (identique à Normal)
+            scoreToDisplay = basePoints * (generation + 1);
+            HandleNormalBubble();
+            SpawnChildBubbles();
+            // Le texte est déjà affiché dans HandleNormalBubble
+            break; // Important
+    }
+
+    // Jouer l'effet de pop et détruire (si applicable)
+    if (shouldDestroy)
+    {
+        PlayPopEffect(); // Jouer l'effet visuel de pop
         Destroy(gameObject);
     }
+}
 
     private void PlayPopEffect()
     {
@@ -455,7 +523,14 @@ private void SpawnChildBubbles()
     {
         // Calculer et ajouter le score via le GameManager mis en cache
         int scoreAward = basePoints * (generation + 1);
-        if (gameManagerInstance != null) gameManagerInstance.AddScore(scoreAward);
+        
+        if (gameManagerInstance != null)
+        {
+            gameManagerInstance.AddScore(scoreAward);
+            gameManagerInstance.NbBubblePoped(1);
+        }
+
+        ShowFloatingText($"+{scoreAward}", transform.position);
 
         // --- AJOUT DE LA LOGIQUE DE SÉLECTION DU SON ---
         AudioType soundToPlay;
@@ -493,31 +568,94 @@ private void SpawnChildBubbles()
             .OnComplete(() => {
                 int bubbleLayer = LayerMask.NameToLayer("BulleLayer");
                 float finalRadius = transform.localScale.x / 2f; // Utilise la taille finale après l'animation
-                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, finalRadius, 1 << bubbleLayer);
+                float overlapRadius = finalRadius * 1.25f;
+
+
+
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, overlapRadius, 1 << bubbleLayer);
+                int destroyedCount = 0;
+
                 foreach (Collider2D hitCollider in colliders) {
                     if (hitCollider.gameObject == gameObject) continue;
                     var bubbleController = hitCollider.GetComponent<BulleShaderController>();
                     if (bubbleController != null) {
                         bubbleController.PlayPopEffect();
                         Destroy(bubbleController.gameObject);
+                        destroyedCount++;
                     }
                 }
                 PlayPopEffect();
                 if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Dead, AudioSourceType.Player);
-                if (gameManagerInstance != null) gameManagerInstance.AddScore(basePoints * 2);
-                Destroy(gameObject);
+
+                int totalPopped = 1 + destroyedCount;
+                int scoreForExplosion = basePoints * 2;
+                int scoreForDestroyed = destroyedCount * basePoints;
+                int totalScore = scoreForExplosion + scoreForDestroyed; // Score total de l'explosion
+
+                if (gameManagerInstance != null)
+                {
+                    gameManagerInstance.AddScore(totalScore);
+                    gameManagerInstance.NbBubblePoped(totalPopped);
+                }
+
+
+                // --- Instanciation du Texte Flottant ---
+                // Affiche le texte seulement si plus d'une bulle a éclaté (pour éviter le "+1!")
+                string displayText;
+                if (totalPopped > 1) {
+                    // Afficher score ET nombre de bulles si plus d'une
+                    displayText = $"+{totalScore}\n({totalPopped} popped!)"; // \n pour nouvelle ligne
+                } else {
+                    // Afficher juste le score si seule la bulle explosive a éclaté
+                    displayText = $"+{totalScore}";
+                }
+
+                // Utiliser la méthode helper avec le texte formaté et une couleur
+                ShowFloatingText(displayText, transform.position, Color.yellow);
+                // --- FIN MODIFICATION ---
+
+
+                // --- Suppression de l'ancien code d'instanciation direct ---
+                // if (totalPopped >= 1 && floatingTextPrefab != null) { ... } // Tout ce bloc est remplacé par l'appel ShowFloatingText ci-dessus
+
+                Destroy(gameObject); // Détruire la bulle explosive
             });
     }
 
-    void OnDrawGizmosSelected() {
-        // Gizmos (inchangé, mais le calcul du rayon final est basé sur la scale actuelle)
-        if (bubbleType == BubbleType.Explosive) {
-            Gizmos.color = new Color(1f, 0f, 0f, 0.3f);
-            // Calcule le rayon tel qu'il sera à la fin de l'animation DOScale
-            float finalRadius = (transform.localScale.x / 2f) * explosionRadius;
-            Gizmos.DrawWireSphere(transform.position, finalRadius);
-        }
+void OnDrawGizmos()
+{
+    // S'applique uniquement aux bulles explosives
+    if (bubbleType == BubbleType.Explosive)
+    {
+        // --- Calculs basés sur la logique de HandleExplosiveBubble ---
+
+        // 1. Échelle que la bulle ATTEINDRA à la fin de l'animation DOScale
+        //    (Basé sur l'échelle ACTUELLE * le multiplicateur d'explosion)
+        float potentialFinalScale = transform.localScale.x * explosionRadius;
+
+        // 2. Rayon correspondant à cette échelle finale (taille visuelle)
+        float potentialFinalRadius = potentialFinalScale / 2f;
+
+        // 3. Rayon d'overlap (celui qui est augmenté de 10%)
+        float potentialOverlapRadius = potentialFinalRadius * 1.10f; // Utilise le même facteur que dans HandleExplosiveBubble
+
+        // --- Dessin des Gizmos ---
+
+        // Dessiner le rayon final de l'explosion (taille visuelle de la bulle)
+        Gizmos.color = new Color(1f, 0f, 0f, 0.3f); // Rouge semi-transparent
+        Gizmos.DrawWireSphere(transform.position, potentialFinalRadius);
+
+        // Dessiner le rayon d'overlap utilisé pour la détection (légèrement plus grand)
+        Gizmos.color = new Color(1f, 1f, 0f, 0.8f); // Jaune plus opaque pour le distinguer
+        Gizmos.DrawWireSphere(transform.position, potentialOverlapRadius);
+
+        // Optionnel : Ajouter une légende ou un label (nécessite UnityEditor namespace)
+        #if UNITY_EDITOR
+        UnityEditor.Handles.Label(transform.position + Vector3.up * potentialOverlapRadius, $"Overlap Radius: {potentialOverlapRadius:F2}");
+        #endif
     }
+}
+
 
     void OnDestroy()
     {
@@ -527,4 +665,36 @@ private void SpawnChildBubbles()
             Destroy(bubbleMaterialInstance);
         }
     }
+
+private void ShowFloatingText(string text, Vector3 position, Color? color = null)
+{
+    if (floatingTextPrefab == null)
+    {
+        // Pas besoin de log ici, déjà géré ailleurs si nécessaire
+        return;
+    }
+
+    if (_foundWorldSpaceCanvasTransform == null)
+    {
+        Debug.LogError("ShowFloatingText: _foundWorldSpaceCanvasTransform est null. Impossible d'instancier le texte flottant.");
+        return;
+    }
+
+    // Instancier comme enfant du Canvas
+    GameObject textInstance = Instantiate(floatingTextPrefab, position, Quaternion.identity, _foundWorldSpaceCanvasTransform);
+
+    FloatingTextEffect ftScript = textInstance.GetComponent<FloatingTextEffect>();
+    if (ftScript != null)
+    {
+        // Utiliser la nouvelle méthode Initialize
+        ftScript.Initialize(text, color);
+    }
+    else
+    {
+        Debug.LogWarning("Le prefab de texte flottant n'a pas le script FloatingTextEffect.");
+        // Détruire l'instance si le script est manquant pour éviter les objets orphelins
+        Destroy(textInstance);
+    }
+}
+
 }

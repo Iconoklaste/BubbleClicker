@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 21453e39f4d714b499bce485b85343df
+guid: 8454dab8edd4f0647b1ce16a8c3aab12
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -136,13 +136,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ui-panel
+      name: curseur
       rect:
         serializedVersion: 2
-        x: 19
-        y: 212
-        width: 255
-        height: 232
+        x: 39
+        y: 497
+        width: 148
+        height: 137
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -150,20 +150,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: da149c5582d1b45489bde4a8d6aacff1
-      internalID: 1146794652
+      spriteID: 048620d84ffea0848a7d2d7273c71ab1
+      internalID: 1147271467
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: UI-sprite-sheat_1
+      name: contour
       rect:
         serializedVersion: 2
-        x: 24
-        y: 20
-        width: 355
-        height: 51
+        x: 1
+        y: 221
+        width: 2433
+        height: 255
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -171,20 +171,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ee79456bbfb5b06448e3d60c618dd099
-      internalID: 2097569855
+      spriteID: cad941ef019f9d747bfda4df4ad81308
+      internalID: 725390763
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: bonton-large
+      name: fond
       rect:
         serializedVersion: 2
-        x: 313
-        y: 216
-        width: 268
-        height: 83
+        x: 29
+        y: 14
+        width: 2351
+        height: 118
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -192,8 +192,71 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6cbb203afeba5a74fb1ad1757f487cdc
-      internalID: -1187447843
+      spriteID: 3ef6839a7fb52f5479eff13efff53478
+      internalID: -23842044
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ico-pouce
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 500
+        width: 125
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 10f218a7d51ddc2408a64786d71ff9e1
+      internalID: 528886957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ico-danger
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 498
+        width: 125
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7d8d952ca40c38744887fe58cc797b06
+      internalID: -296929831
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ico-death
+      rect:
+        serializedVersion: 2
+        x: 554
+        y: 500
+        width: 125
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 102ff0a02d9359f44afda085d3112bd2
+      internalID: -496826314
       vertices: []
       indices: 
       edges: []
@@ -209,10 +272,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      UI-sprite-sheat_1: 2097569855
-      bonton-large: -1187447843
-      c: -1873530549
-      ui-panel: 1146794652
+      contour: 725390763
+      curseur: 1147271467
+      fond: -23842044
+      ico-danger: -296929831
+      ico-death: -496826314
+      ico-pouce: 528886957
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

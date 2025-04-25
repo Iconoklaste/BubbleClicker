@@ -161,7 +161,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c63bec29c3e292c4689b036a4db73af2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vitesseMontee: 0.6
+  vitesseMontee: 0.7
   initialScale: 0.25
   growthFactorSpeed: 0.2
   shaderRotationSpeed: 10
@@ -171,15 +171,16 @@ MonoBehaviour:
   maxSpeedMultiplier: 1.197
   explosionRadius: 2
   bubblePrefab: {fileID: 8644719750424515103}
-  numberOfChildBubbles: 3
-  childScaleFactor: 0.454
+  numberOfChildBubbles: 2
+  childScaleFactor: 0.4
   explosionForce: 100
-  spawnOffsetRadius: 0.2
+  spawnOffsetRadius: 1
   bubbleLayerMask:
     serializedVersion: 2
     m_Bits: 8
   popEffect: {fileID: 3470074476890878589, guid: 88d9053b927862841860a2a5e3f71b04, type: 3}
   generation: 0
-  maxGenerations: 4
+  maxGenerations: 3
   basePoints: 10
   bubbleType: 0
+  floatingTextPrefab: {fileID: 2118295732113627931, guid: c2a6c9b34e824794cb06902804249b58, type: 3}

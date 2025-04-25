@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15d5fa61bda99e44c9d690e47392e12a, type: 3}
+  m_Name: BubbleSettings_PC
+  m_EditorClassIdentifier: 
+  vitesseMontee: 0.3
+  initialScale: 1
+  growthFactorSpeed: 0.1
+  shaderRotationSpeed: 10
+  shaderDensity: 0.9
+  shaderDistortionSpeed: 0.75
+  minSpeedMultiplier: 0.8
+  maxSpeedMultiplier: 1.2
+  explosionRadius: 2
+  explosionOverlapMultiplier: 1.1
+  numberOfChildBubbles: 3
+  childScaleFactor: 0.5
+  explosionForce: 100
+  spawnOffsetRadius: 0.2
+  basePoints: 10

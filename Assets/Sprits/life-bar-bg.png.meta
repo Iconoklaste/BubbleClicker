@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 21453e39f4d714b499bce485b85343df
+guid: 7ea3cc5f05456444aace0aefb555361b
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -43,7 +43,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -134,70 +134,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: ui-panel
-      rect:
-        serializedVersion: 2
-        x: 19
-        y: 212
-        width: 255
-        height: 232
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: da149c5582d1b45489bde4a8d6aacff1
-      internalID: 1146794652
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: UI-sprite-sheat_1
-      rect:
-        serializedVersion: 2
-        x: 24
-        y: 20
-        width: 355
-        height: 51
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: ee79456bbfb5b06448e3d60c618dd099
-      internalID: 2097569855
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: bonton-large
-      rect:
-        serializedVersion: 2
-        x: 313
-        y: 216
-        width: 268
-        height: 83
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 6cbb203afeba5a74fb1ad1757f487cdc
-      internalID: -1187447843
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     physicsShape: []
     bones: []
@@ -208,11 +145,7 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable:
-      UI-sprite-sheat_1: 2097569855
-      bonton-large: -1187447843
-      c: -1873530549
-      ui-panel: 1146794652
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

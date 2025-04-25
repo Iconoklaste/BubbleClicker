@@ -495,7 +495,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -91}
+  m_AnchoredPosition: {x: 0, y: -68}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &704815233
@@ -656,7 +656,7 @@ MonoBehaviour:
   fadeOutDuration: 1
   fadeInDuration: 1.5
   transitionClip: {fileID: 8300000, guid: 87ecbe4e22c833849a432938ae33a8b0, type: 3}
-  visualFadeStartTime: 3.5
+  visualFadeStartTime: 1.5
   sceneLoadTime: 6.5
   audioEndTime: 30
   audioFadeOutDuration: 5
@@ -783,15 +783,15 @@ RectTransform:
   m_GameObject: {fileID: 845566147}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.79667, y: 0.79667, z: 0.79667}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1950910440}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 203}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchorMin: {x: 0, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 558.4173}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &845566149
 MonoBehaviour:
@@ -813,23 +813,13 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Got some time
+  m_text: '<margin=1em>Got some time to kill?
 
-    to kill?
-
-
-    Wanna chill
-
-    for real?
+    Wanna chill for real?
 
 
     Then
-    dive,
-
-    pop some bubbles,
-
-
-    and forget the drill!'
+    dive, pop some bubbles, and forget the drill!'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d2ccb3c6067d2744fafe2ababddb86f5, type: 2}
   m_sharedMaterial: {fileID: -8003816849903394994, guid: d2ccb3c6067d2744fafe2ababddb86f5, type: 2}
@@ -856,11 +846,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50.65
+  m_fontSize: 72
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
+  m_fontSizeMin: 10
   m_fontSizeMax: 72
   m_fontStyle: 1
   m_HorizontalAlignment: 2
@@ -892,7 +882,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: -242.85822, y: 0, z: -239.83374, w: -550.5013}
+  m_margin: {x: -9.064636, y: -32.72708, z: -19.076477, w: -30.958954}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1173,8 +1163,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: -1187447843, guid: 21453e39f4d714b499bce485b85343df, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -1265,12 +1255,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameOverPanel: {fileID: 0}
-  coverageText: {fileID: 0}
   scoreText: {fileID: 0}
+  bubbleText: {fileID: 0}
+  coverageSlider: {fileID: 0}
   mainCamera: {fileID: 0}
   gameIsOver: 0
   txCouvertureMax: 0.6
-  confinementMargin: 0.1
+  coverageSmoothingSpeed: 5
   bubbleSpawner: {fileID: 0}
   swipeModeActive: 0
   freezeModeActive: 0

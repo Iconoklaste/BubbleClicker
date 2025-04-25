@@ -72,4 +72,18 @@ public class AudioManager : MonoBehaviour
         Debug.LogError("AudioManager: No clip found for type " + type);
         return null;
     }
+
+    public void StopAllSounds()
+    {
+        if (gameSource != null)
+        {
+            gameSource.Stop();
+        }
+        if (playerSource != null)
+        {
+            playerSource.Stop();
+        }
+         Debug.Log("AudioManager: Toutes les sources audio gérées ont été arrêtées.");
+    }
 }
+
