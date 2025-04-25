@@ -1,11 +1,9 @@
 using DG.Tweening;
 using UnityEngine;
 using System.Collections;
-using static BubbleSpawner; // Décommenter si BubbleType est défini dans BubbleSpawner
-// using Random = UnityEngine.Random; // Décommenter si nécessaire
+using System.Collections.Generic;
+using static BubbleSpawner;
 
-// Assurez-vous que BubbleType est défini quelque part (ici ou dans BubbleSpawner)
-// public enum BubbleType { Normal, Swipe, Explosive, Freeze }
 
 public class BulleShaderController : MonoBehaviour
 {
@@ -13,7 +11,6 @@ public class BulleShaderController : MonoBehaviour
     public float vitesseMontee = 0.3f;
 
     [Header("Size & Growth")]
-    // Retiré: pressionInitiale, pressionMinimale
     public float initialScale = 1f; // Taille de départ de la bulle
     public float growthFactorSpeed = 0.1f; // Vitesse à laquelle la bulle grossit
     private const float MAX_GROWTH_FACTOR = 5f; // Taille maximale relative à la taille initiale
@@ -28,6 +25,10 @@ public class BulleShaderController : MonoBehaviour
     [Header("Explosive Bubble")]
     public float explosionRadius = 2f;
     private const float EXPLOSION_ANIMATION_DURATION = 0.8f;
+
+    [Header("Freeze Mode Settings")] // Nouvelle section pour le facteur de ralentissement
+    [Range(0.0f, 1.0f)] // 0 = arrêt complet, 1 = aucune différence
+    public float freezeSlowdownFactor = 0.1f; // Ralentit à 10% de la vitesse normale
 
     [Header("Child Bubbles")]
     public GameObject bubblePrefab;
@@ -44,10 +45,9 @@ public class BulleShaderController : MonoBehaviour
     public int basePoints = 10;
     public BubbleType bubbleType;
     
-    public bool swipeModeActive = false;
-    public bool freezeModeActive = false;
 
-    [Header("UI Feedback")] // Nouvelle section dans l'inspecteur
+
+    [Header("UI Feedback")]
     public GameObject floatingTextPrefab;
 
 
@@ -63,6 +63,13 @@ public class BulleShaderController : MonoBehaviour
     private float currentGrowthFactor = 1f;
     private bool isBlockedAtTop = false;
     private Transform _foundWorldSpaceCanvasTransform;
+    private bool isSwiping = false;
+
+    private bool swipeModeActive = false;
+    private bool freezeModeActive = false;
+
+    // Utiliser un HashSet est efficace pour vérifier si une bulle a déjà été touchée pendant CE swipe
+    private static HashSet<BulleShaderController> swipedBubblesThisGesture = new HashSet<BulleShaderController>();
 
     // --- Noms des propriétés Shader ---
     private static readonly int RotationSpeedID = Shader.PropertyToID("_Rotation_Speed");
@@ -99,7 +106,7 @@ public class BulleShaderController : MonoBehaviour
         if (canvasGO != null)
         {
             _foundWorldSpaceCanvasTransform = canvasGO.transform;
-            Debug.Log($"Canvas World Space trouvé via Tag: {canvasGO.name}");
+            // Debug.Log($"Canvas World Space trouvé via Tag: {canvasGO.name}");
         }
         else
         {
@@ -111,14 +118,13 @@ public class BulleShaderController : MonoBehaviour
         if (rb == null) Debug.LogError($"BulleShaderController: Rigidbody2D non trouvé sur {gameObject.name}");
         if (bubbleMaterialInstance == null && objectRenderer != null) Debug.LogError($"BulleShaderController: Impossible d'obtenir l'instance du matériel pour {gameObject.name}.");
         else if (bubbleMaterialInstance == null && objectRenderer == null) Debug.LogError($"BulleShaderController: Impossible d'obtenir l'instance du matériel car le Renderer est manquant pour {gameObject.name}.");
-        if (bubbleLayerMask == 0) // 0 est la valeur par défaut si rien n'est coché
+        
+        if (bubbleLayerMask == 0) 
         {
-            bubbleLayerMask = LayerMask.GetMask("BulleLayer"); // Remplace "BulleLayer" par le nom exact de ton layer
-            if (bubbleLayerMask == 0) // Si le layer n'existe pas
+            bubbleLayerMask = LayerMask.GetMask("BulleLayer");
+            if (bubbleLayerMask == 0)
             {
                 Debug.LogWarning($"Awake: Layer 'BulleLayer' non trouvé ou non assigné sur {gameObject.name}. La détection de blocage pourrait ne pas fonctionner.");
-                // Tu pourrais assigner 'Default' ou une autre valeur sûre si nécessaire
-                // bubbleLayerMask = LayerMask.GetMask("Default");
             }
         }
     }
@@ -131,64 +137,227 @@ public class BulleShaderController : MonoBehaviour
             // Initialisation standard pour les bulles de base (gen 0)
             InitializeAndRandomizeShaderParameters();
             ApplyBubbleTypeColor(); // Appliquer la couleur basée sur le type défini dans l'inspecteur
-
             // Appliquer la taille initiale définie dans l'inspecteur
             transform.localScale = Vector3.one * initialScale;
             // Réinitialiser le facteur de croissance à 1 pour commencer la croissance
             currentGrowthFactor = 1f;
         }
-        // Si hasBeenInitializedBySpawner est true, InitializeFromSpawner a déjà tout fait.
     }
 
-void FixedUpdate()
-{
-    if (rb == null) return;
-
-    // 1. Vérifier si on DOIT bouger vers le haut
-    bool shouldMoveUp = CanMoveUp();
-
-    // 2. Appliquer la vélocité (ou l'arrêter)
-    if (shouldMoveUp)
+    void Update()
     {
-        MoveUpward();
-        isBlockedAtTop = false; // On peut bouger, donc on n'est pas bloqué
-    }
-    else
+        // 1. Mettre à jour l'état local des modes depuis le GameManager
+        bool previousFreezeState = freezeModeActive;
+        CheckGlobalSwipeMode();
+        CheckGlobalFreezeMode();
+
+    // 2. Appliquer les vitesses du shader UNIQUEMENT si l'état de freeze a changé
+    if (freezeModeActive != previousFreezeState)
     {
-        rb.velocity = Vector2.zero; // Arrêter le mouvement
-        isBlockedAtTop = true; // On est bloqué
+         ApplyShaderSpeeds(); // Applique la vitesse ralentie ou la vitesse normale
     }
 
-    // 3. S'assurer que la position reste dans l'écran (surtout après l'arrêt)
-    ClampPositionToScreen();
+        // 3. Vérifier si le jeu est terminé
+        if (gameManagerInstance != null && gameManagerInstance.gameIsOver)
+        {
+            if (isSwiping) isSwiping = false; // Assurer la réinitialisation
+            return;
+        }
 
-    GrowOverTime();
+        // 4. Gérer l'input de swipe SEULEMENT si le mode est actif
+        if (swipeModeActive)
+        {
+            HandleSwipeInput(); // La méthode qu'on a définie plus haut
+        }
 
-    // 4. Gérer la croissance SEULEMENT si on n'est PAS bloqué en haut
-/*     if (!isBlockedAtTop) // <-- AJOUT DE CETTE CONDITION
+/*         // --- Gestion de l'input pour le swipe ---
+
+        // 1. Début du swipe (bouton pressé)
+        if (Input.GetMouseButtonDown(0))
+        {
+            isSwiping = true;
+            swipedBubblesThisGesture.Clear(); // Vider la liste des bulles touchées pour ce nouveau geste
+            // Debug.Log("Swipe Started"); // Optionnel
+        }
+
+        // 2. Pendant le swipe (bouton maintenu)
+        if (isSwiping && Input.GetMouseButton(0))
+        {
+            // Lancer un rayon depuis la caméra vers la position de la souris
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            // Utiliser Physics2D.GetRayIntersection pour détecter les colliders 2D
+            // Important: Spécifier la distance (Mathf.Infinity) et le LayerMask (bubbleLayerMask)
+            RaycastHit2D hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity, bubbleLayerMask);
+
+            // Si le rayon touche un collider sur le bon layer
+            if (hit.collider != null)
+            {
+                // Essayer de récupérer le script BulleShaderController sur l'objet touché
+                BulleShaderController hitBubble = hit.collider.GetComponent<BulleShaderController>();
+
+                // Si c'est bien une bulle et qu'elle n'a pas déjà été ajoutée à la liste pour CE swipe
+                if (hitBubble != null && swipedBubblesThisGesture.Add(hitBubble)) // .Add retourne true si l'élément n'était pas déjà présent
+                {
+                    // On a touché une nouvelle bulle pendant ce swipe !
+                    HandleSwipePop(hitBubble); // Appeler la fonction pour la détruire/gérer
+                }
+                // Si hitBubble est null ou déjà dans le HashSet, on ne fait rien (évite double pop)
+            }
+        }
+
+        // 3. Fin du swipe (bouton relâché)
+        if (isSwiping && Input.GetMouseButtonUp(0))
+        {
+            isSwiping = false;
+            // Debug.Log($"Swipe Ended. Bubbles popped this gesture: {swipedBubblesThisGesture.Count}"); // Optionnel
+            // Ici, tu pourrais ajouter un bonus si swipedBubblesThisGesture.Count > X, par exemple.
+            // swipedBubblesThisGesture.Clear(); // Pas besoin de Clear ici, c'est fait au prochain MouseButtonDown
+        } */
+    }
+
+
+
+    void FixedUpdate()
     {
-        GrowOverTime();
-    } */
-    // Si isBlockedAtTop est true, la croissance est mise en pause.
-    // Elle reprendra automatiquement au prochain FixedUpdate où shouldMoveUp devient true.
-}
+        if (rb == null) return; // Sécurité
+
+        // 1. Déterminer les vitesses effectives pour cette frame
+        float currentVitesseMontee = vitesseMontee;
+        float currentGrowthSpeed = growthFactorSpeed;
+
+        // Si le mode Freeze est actif, appliquer le facteur de ralentissement
+        if (freezeModeActive)
+        {
+            currentVitesseMontee *= freezeSlowdownFactor;
+            currentGrowthSpeed *= freezeSlowdownFactor;
+        }
+
+        // 2. Logique de mouvement (utilise la vitesse effective)
+        bool shouldMoveUp = CanMoveUp();
+        if (shouldMoveUp)
+        {
+            // Appliquer la vitesse de montée (potentiellement ralentie)
+            rb.velocity = Vector2.up * currentVitesseMontee;
+            isBlockedAtTop = false;
+        }
+        else
+        {
+            // Si bloqué, arrêter complètement le mouvement vertical
+            rb.velocity = new Vector2(rb.velocity.x, 0); // Garde la vélocité horizontale si jamais il y en a
+            isBlockedAtTop = true;
+        }
+
+        // 3. Logique de Clamp (inchangée)
+        ClampPositionToScreen();
+
+        // 4. Logique de croissance (utilise la vitesse de croissance effective)
+        //    On appelle GrowOverTime en lui passant la vitesse calculée
+        GrowOverTime(currentGrowthSpeed);
+    }
+
+    private void ApplyShaderSpeeds()
+    {
+        // Vérifier si l'instance du matériel existe (sécurité)
+        if (bubbleMaterialInstance == null)
+        {
+             Debug.LogWarning($"[{gameObject.name}] ApplyShaderSpeeds: Impossible d'appliquer les vitesses, bubbleMaterialInstance est null.");
+             return;
+        }
+
+        // Déterminer le multiplicateur de vitesse basé sur l'état actuel du mode Freeze
+        // Si freezeModeActive est true, utiliser freezeSlowdownFactor, sinon utiliser 1.0 (vitesse normale)
+        float speedMultiplier = freezeModeActive ? freezeSlowdownFactor : 1.0f;
+
+        // Calculer les vitesses finales à appliquer au shader
+        float finalRotationSpeed = instanceRotationSpeed * speedMultiplier;
+        float finalDistortionSpeed = instanceDistortionSpeed * speedMultiplier;
+
+        // Appliquer les vitesses calculées aux propriétés du shader
+        bubbleMaterialInstance.SetFloat(RotationSpeedID, finalRotationSpeed);
+        bubbleMaterialInstance.SetFloat(DistortionSpeedID, finalDistortionSpeed);
+
+        // Log de débogage (optionnel mais utile)
+        Debug.Log($"[{gameObject.name}] ApplyShaderSpeeds called. FreezeActive={freezeModeActive}, Multiplier={speedMultiplier:F2}, FinalRot={finalRotationSpeed:F2}, FinalDist={finalDistortionSpeed:F2}");
+    }
+
+    // Gestion de l'Input du Swipe
+    private void HandleSwipeInput()
+    {
+        // Vérifier si la caméra existe (sécurité)
+        if (mainCamera == null)
+        {
+            Debug.LogError("HandleSwipeInput: mainCamera est null !");
+            return;
+        }
+
+        // 1. Début du swipe (bouton pressé)
+        if (Input.GetMouseButtonDown(0))
+        {
+            isSwiping = true;
+            swipedBubblesThisGesture.Clear(); // Vider la liste des bulles touchées pour ce nouveau geste
+            // Debug.Log("Swipe Started"); // Optionnel
+        }
+
+        // 2. Pendant le swipe (bouton maintenu)
+        //    Important : Vérifier AUSSI si on est bien en train de swiper (isSwiping)
+        if (isSwiping && Input.GetMouseButton(0))
+        {
+            // Lancer un rayon depuis la caméra vers la position de la souris
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            // Utiliser Physics2D.GetRayIntersection pour détecter les colliders 2D
+            // Important: Spécifier la distance (Mathf.Infinity) et le LayerMask (bubbleLayerMask)
+            RaycastHit2D hit = Physics2D.GetRayIntersection(ray, Mathf.Infinity, bubbleLayerMask);
+
+            // Si le rayon touche un collider sur le bon layer
+            if (hit.collider != null)
+            {
+                // Essayer de récupérer le script BulleShaderController sur l'objet touché
+                BulleShaderController hitBubble = hit.collider.GetComponent<BulleShaderController>();
+
+                // Si c'est bien une bulle et qu'elle n'a pas déjà été ajoutée à la liste pour CE swipe
+                if (hitBubble != null && swipedBubblesThisGesture.Add(hitBubble)) // .Add retourne true si l'élément n'était pas déjà présent
+                {
+                    // On a touché une nouvelle bulle pendant ce swipe !
+                    HandleSwipePop(hitBubble); // Appeler la fonction pour la détruire/gérer
+                }
+                // Si hitBubble est null ou déjà dans le HashSet, on ne fait rien (évite double pop)
+            }
+        }
+
+        // 3. Fin du swipe (bouton relâché)
+        //    Important : Vérifier AUSSI si on était bien en train de swiper (isSwiping)
+        if (isSwiping && Input.GetMouseButtonUp(0))
+        {
+            isSwiping = false;
+            // Debug.Log($"Swipe Ended. Bubbles popped this gesture: {swipedBubblesThisGesture.Count}"); // Optionnel
+            // Ici, tu pourrais ajouter un bonus si swipedBubblesThisGesture.Count > X, par exemple.
+            // swipedBubblesThisGesture.Clear(); // Pas besoin de Clear ici, c'est fait au prochain MouseButtonDown
+        }
+    }
 
 
     private void InitializeAndRandomizeShaderParameters()
     {
-         if (bubbleMaterialInstance != null)
+        if (bubbleMaterialInstance != null)
         {
+            // Calculer et stocker les vitesses *originales* randomisées
             instanceRotationSpeed = shaderRotationSpeed * Random.Range(minSpeedMultiplier, maxSpeedMultiplier);
             instanceDistortionSpeed = shaderDistortionSpeed * Random.Range(minSpeedMultiplier, maxSpeedMultiplier);
 
+            // Appliquer DIRECTEMENT les vitesses originales ici, sans passer par ApplyShaderSpeeds
+            // pour être sûr de l'état initial.
             bubbleMaterialInstance.SetFloat(RotationSpeedID, instanceRotationSpeed);
-            bubbleMaterialInstance.SetFloat(DensityID, shaderDensity);
             bubbleMaterialInstance.SetFloat(DistortionSpeedID, instanceDistortionSpeed);
+
+            // Définir la densité (ne change pas avec le freeze)
+            bubbleMaterialInstance.SetFloat(DensityID, shaderDensity);
+
+            Debug.Log($"[{gameObject.name}] Initialized & Applied ORIGINAL shader speeds: Rot={instanceRotationSpeed:F2}, Dist={instanceDistortionSpeed:F2}");
         }
-         else
-         {
-             Debug.LogError($"InitializeAndRandomizeShaderParameters: Tentative d'accès à bubbleMaterialInstance alors qu'il est null sur {gameObject.name}.");
-         }
+        else
+        {
+            Debug.LogError($"InitializeAndRandomizeShaderParameters: bubbleMaterialInstance is null on {gameObject.name}.");
+        }
     }
 
     // Nouvelle méthode pour permettre au spawner de définir l'état initial
@@ -222,63 +391,42 @@ void FixedUpdate()
     // Nouvelle fonction pour vérifier si la voie est libre vers le haut
 private bool CanMoveUp()
 {
-    if (mainCamera == null)
-    {
-        // Debug.Log($"{gameObject.name}: CanMoveUp - No Main Camera, assuming true."); // Décommenter si besoin
-        return true; // Si pas de caméra, on suppose qu'on peut bouger
-    }
-
-    // Vérification 1: Est-on déjà tout en haut de l'écran ?
+    if (mainCamera == null) return true;
     Vector3 viewportPos = mainCamera.WorldToViewportPoint(transform.position);
-    // Utiliser une petite marge pour éviter les problèmes de flottants
-    if (viewportPos.y >= 0.99f)
-    {
-        Debug.Log($"{gameObject.name}: CanMoveUp - Blocked by ceiling (Viewport Y: {viewportPos.y})");
-        return false; // Bloqué par le plafond de l'écran
-    }
+    if (viewportPos.y >= 0.99f) return false;
 
     // Vérification 2: Y a-t-il une autre bulle juste au-dessus ?
     float bubbleRadius = transform.localScale.x * 0.5f; // Approximation du rayon
-    Collider2D ownCollider = GetComponent<Collider2D>(); // Récupérer notre propre collider
 
-    // --- AJUSTEMENT CRUCIAL ---
-    // Calculer le point le plus haut du collider (si possible), sinon utiliser le rayon.
-    // Ajouter une petite marge (epsilon) pour s'assurer que le rayon part BIEN de l'extérieur.
-    float epsilon = 0.01f;
+    Collider2D ownCollider = GetComponent<Collider2D>(); // Récupérer notre propre collider
+    float epsilon = 0.01f; // Ajouter une petite marge (epsilon) pour s'assurer que le rayon part BIEN de l'extérieur.
     float raycastStartYOffset = (ownCollider != null ? ownCollider.bounds.extents.y : bubbleRadius) + epsilon;
     Vector2 raycastOrigin = (Vector2)transform.position + Vector2.up * raycastStartYOffset;
-
-    // Distance très courte pour détecter un contact immédiat
-    float raycastDistance = 0.05f;
-
+    float raycastDistance = 0.05f; // Distance très courte pour détecter un contact immédiat
     // Dessiner le rayon pour le débogage (optionnel)
-    Debug.DrawRay(raycastOrigin, Vector2.up * raycastDistance, Color.red, 0.1f); // Ajout durée pour mieux voir
-
+     //Debug.DrawRay(raycastOrigin, Vector2.up * raycastDistance, Color.red, 0.1f); // Ajout durée pour mieux voir
     RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, Vector2.up, raycastDistance, bubbleLayerMask);
 
     // S'il y a une collision avec une autre bulle (sur le bon layer)
-    if (hit.collider != null)
-    {
-        // --- AJOUT VERIFICATION ---
-        // S'assurer qu'on ne se détecte pas soi-même (même si l'offset devrait l'éviter)
-        if (hit.collider == ownCollider)
+        if (hit.collider != null && hit.collider != ownCollider)
         {
-             Debug.LogWarning($"{gameObject.name}: CanMoveUp - Raycast hit itself! Check raycast origin calculation.");
-             // On considère qu'on peut bouger si on se touche soi-même (erreur de raycast)
-             return true;
+            // Debug.Log($"{gameObject.name}: Blocked by {hit.collider.name}");
+            return false;
         }
-        else
-        {
-             Debug.Log($"{gameObject.name}: CanMoveUp - Blocked by bubble above: {hit.collider.name}");
-             return false; // Bloqué par une autre bulle
-        }
+        return true;
     }
 
-    // Si on n'est ni au plafond, ni bloqué par une autre bulle : on peut monter
-    // Debug.Log($"{gameObject.name}: CanMoveUp - Path clear."); // Décommenter si besoin
-    return true;
-}
+    private void GrowOverTime(float effectiveGrowthSpeed) // Prend la vitesse en paramètre
+    {
+        // Augmenter le facteur de croissance en utilisant la vitesse fournie
+        currentGrowthFactor += effectiveGrowthSpeed * Time.fixedDeltaTime;
+        currentGrowthFactor = Mathf.Min(currentGrowthFactor, MAX_GROWTH_FACTOR);
 
+        // Application de la taille globale (inchangé)
+        transform.localScale = Vector3.one * initialScale * currentGrowthFactor;
+    }
+
+/* 
 
 
     private void MoveUpward()
@@ -286,21 +434,19 @@ private bool CanMoveUp()
         rb.velocity = Vector2.up * vitesseMontee;
     }
 
-    // Fonction simplifiée pour juste faire grossir la bulle
-    private void GrowOverTime()
+    // Fonction pour juste faire grossir la bulle
+    private void GrowOverTime(float effectiveGrowthSpeed) // Prend la vitesse en paramètre
     {
-        // --- Augmenter le facteur de croissance ---
-        currentGrowthFactor += growthFactorSpeed * Time.fixedDeltaTime;
-        // Limiter la croissance maximale
+        // Augmenter le facteur de croissance en utilisant la vitesse fournie
+        currentGrowthFactor += effectiveGrowthSpeed * Time.fixedDeltaTime;
         currentGrowthFactor = Mathf.Min(currentGrowthFactor, MAX_GROWTH_FACTOR);
 
-        // --- Application de la taille globale ---
-        // La taille est maintenant la taille initiale * le facteur de croissance actuel
+        // Application de la taille globale (inchangé)
         transform.localScale = Vector3.one * initialScale * currentGrowthFactor;
     }
 
     // Retiré: AdjustSize() qui contenait la logique de pression
-
+ */
 void ClampPositionToScreen()
 {
     if (mainCamera == null) return;
@@ -373,7 +519,7 @@ void ClampPositionToScreen()
              return;
         }
         Color targetColor;
-        switch (bubbleType) { /* ... cas inchangés ... */
+        switch (bubbleType) { 
             case BubbleType.Swipe: targetColor = Color.green; break;
             case BubbleType.Explosive: targetColor = Color.red; break;
             case BubbleType.Freeze: targetColor = Color.magenta; break;
@@ -385,10 +531,14 @@ void ClampPositionToScreen()
 
 private void OnMouseDown()
 {
-    if (gameManagerInstance != null && gameManagerInstance.gameIsOver) return;
-    Debug.Log($"Bulle cliquée : {gameObject.name}, génération : {generation}, type : {bubbleType}");
+    // Si on est en mode swipe, le clic simple ne fait rien, tout est géré dans Update
+    if (swipeModeActive) return;
 
-    // --- AJOUT : Variable pour stocker le score à afficher ---
+        // Si le jeu est fini, ne rien faire
+    if (gameManagerInstance != null && gameManagerInstance.gameIsOver) return;
+    // Debug.Log($"Bulle cliquée : {gameObject.name}, génération : {generation}, type : {bubbleType}");
+
+    // Variable pour stocker le score à afficher ---
     int scoreToDisplay = 0;
     bool shouldDestroy = true; // Par défaut, la bulle est détruite
 
@@ -403,12 +553,13 @@ private void OnMouseDown()
 
         case BubbleType.Swipe:
             scoreToDisplay = basePoints; // Score pour le swipe
+            ActivateSwipeMode(3f); // Active le mode global via GameManager
             if (gameManagerInstance != null)
-            {
-                 ActivateSwipeMode(3f);
-                 gameManagerInstance.AddScore(scoreToDisplay); // Ajouter le score
-                 gameManagerInstance.NbBubblePoped(1);
-            }
+                if (gameManagerInstance != null)
+                {
+                    gameManagerInstance.AddScore(scoreToDisplay);
+                    gameManagerInstance.NbBubblePoped(1);
+                }
             if (audioManagerInstance != null) audioManagerInstance.PlaySound(AudioType.Swipe, AudioSourceType.Player);
             // Afficher le texte flottant pour Swipe
             ShowFloatingText($"+{scoreToDisplay}", transform.position, Color.green); // Couleur optionnelle
@@ -422,6 +573,7 @@ private void OnMouseDown()
 
         case BubbleType.Freeze:
             scoreToDisplay = basePoints; // Score pour le freeze
+            ActivateFreezeMode(3f);
              if (gameManagerInstance != null)
              {
                  ActivateFreezeMode(3f);
@@ -437,7 +589,6 @@ private void OnMouseDown()
             scoreToDisplay = basePoints * (generation + 1);
             HandleNormalBubble();
             SpawnChildBubbles();
-            // Le texte est déjà affiché dans HandleNormalBubble
             break; // Important
     }
 
@@ -451,7 +602,6 @@ private void OnMouseDown()
 
     private void PlayPopEffect()
     {
-        // Identique à avant
         if (popEffect != null) {
             ParticleSystem effect = Instantiate(popEffect, transform.position, Quaternion.identity);
             Destroy(effect.gameObject, effect.main.duration + effect.main.startLifetime.constantMax);
@@ -629,36 +779,128 @@ private void SpawnChildBubbles()
 
     private void ActivateSwipeMode(float duration)
     {
-        Debug.Log("Activation du mode Swipe pour " + duration + " secondes.");
-        StartCoroutine(SwipeModeCoroutine(duration));
+        if (GameManager.Instance != null)
+        {
+            //Debug.Log($"Bulle {gameObject.name} demande l'activation du Swipe Mode pour {duration}s.");
+            GameManager.Instance.SetSwipeMode(true, duration);
+        }
+        else
+        {
+            Debug.LogError("ActivateSwipeMode: GameManager.Instance est null !");
+        }
+    }
+    // Mettre à jour la variable locale en fonction du GameManager
+    private void CheckGlobalSwipeMode() {
+        if (GameManager.Instance != null) {
+            this.swipeModeActive = GameManager.Instance.IsSwipeModeActive;
+        } else {
+            this.swipeModeActive = false; // Sécurité si GameManager n'existe pas
+        }
     }
 
-    private IEnumerator SwipeModeCoroutine(float duration)
+/*     private IEnumerator SwipeModeCoroutine(float duration)
     {
-        swipeModeActive = true;
-        // Ici, on peut ajouter le code pour activer les effets visuels ou logiques du mode Swipe.
+        // Appliquer le mode à TOUTES les bulles (ou via un manager global)
+        // Ici, on le fait via une variable statique ou en parcourant toutes les bulles.
+        // Pour simplifier, on va supposer que chaque bulle vérifie une variable globale
+        // ou que le GameManager gère cet état.
+        // Pour cet exemple, on va juste activer le booléen sur CETTE instance,
+        // mais il faudrait une meilleure gestion globale.
+        // *** SOLUTION AMÉLIORÉE : Gérer via GameManager ***
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetSwipeMode(true); // Méthode à créer dans GameManager
+        }
+        else {
+             Debug.LogWarning("SwipeModeCoroutine: GameManager non trouvé pour activer le mode globalement.");
+             // Fallback: activer sur cette instance (moins utile)
+             // this.swipeModeActive = true;
+        }
+
+
         yield return new WaitForSeconds(duration);
-        swipeModeActive = false;
-        Debug.Log("Mode Swipe désactivé.");
+
+        // Désactiver le mode globalement
+         if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetSwipeMode(false); // Méthode à créer dans GameManager
+        }
+         else {
+              Debug.LogWarning("SwipeModeCoroutine: GameManager non trouvé pour désactiver le mode globalement.");
+              // Fallback: désactiver sur cette instance
+              // this.swipeModeActive = false;
+         }
+        Debug.Log("Mode Swipe global désactivé.");
+    } */
+
+
+
+    // --- NOUVELLE MÉTHODE POUR GÉRER LE POP PAR SWIPE ---
+    private void HandleSwipePop(BulleShaderController bubble)
+    {
+        // Ne rien faire si la bulle cible est nulle (sécurité)
+        if (bubble == null) return;
+
+        Debug.Log($"Swiped bubble: {bubble.gameObject.name} (Type: {bubble.bubbleType})");
+
+        // --- Logique spécifique au swipe ---
+        // Pour l'instant, on va faire simple :
+        // - Donner des points de base (ou un montant spécifique au swipe)
+        // - Jouer un son de swipe
+        // - Jouer l'effet de pop
+        // - Détruire la bulle
+        // - PAS de spawn d'enfants, PAS d'effet spécial (Explosive/Freeze) déclenché par le swipe
+
+        int scoreAward = bubble.basePoints; // Score simple pour le swipe
+        if (gameManagerInstance != null)
+        {
+            gameManagerInstance.AddScore(scoreAward);
+            gameManagerInstance.NbBubblePoped(1); // Compter la bulle popée
+        }
+
+        // Afficher le texte flottant (utilise la méthode de la bulle touchée)
+        bubble.ShowFloatingText($"+{scoreAward}", bubble.transform.position, Color.cyan); // Couleur spécifique pour le swipe ?
+
+        // Jouer le son de swipe (utilise l'instance de la bulle touchée pour accéder à l'AudioManager global)
+        if (bubble.audioManagerInstance != null)
+        {
+            bubble.audioManagerInstance.PlaySound(AudioType.Swipe, AudioSourceType.Player);
+        }
+
+        // Jouer l'effet visuel (utilise la méthode de la bulle touchée)
+        bubble.PlayPopEffect();
+
+        // Détruire l'objet GameObject de la bulle touchée
+        Destroy(bubble.gameObject);
     }
 
-    // M�thode d'activation du mode Freeze
+    // Méthode d'activation du mode Freeze
     private void ActivateFreezeMode(float duration)
     {
-        Debug.Log("Activation du mode Freeze pour " + duration + " secondes.");
-        StartCoroutine(FreezeModeCoroutine(duration));
+        if (GameManager.Instance != null)
+        {
+            //Debug.Log($"Bulle {gameObject.name} demande l'activation du Freeze Mode pour {duration}s.");
+            GameManager.Instance.SetFreezeMode(true, duration);
+        }
+        else
+        {
+            Debug.LogError("ActivateFreezeMode: GameManager.Instance est null !");
+        }
     }
 
-    private IEnumerator FreezeModeCoroutine(float duration)
-    {
-        freezeModeActive = true;
-        // Par exemple, vous pouvez ralentir le temps de jeu pour les bulles (mais attention Time.timeScale affecte tout)
-        // Ou bien, appliquer un multiplicateur sur la vitesse de d�placement des bulles
-        // Ici on simule simplement l'effet par un Debug.Log
-        yield return new WaitForSeconds(duration);
-        freezeModeActive = false;
-        Debug.Log("Mode Freeze désactivé.");
+ private void CheckGlobalFreezeMode() {
+    bool previousState = this.freezeModeActive;
+    if (GameManager.Instance != null) {
+        this.freezeModeActive = GameManager.Instance.IsFreezeModeActive;
+    } else {
+        this.freezeModeActive = false;
     }
+    // Log si l'état change, surtout s'il devient true
+    if (this.freezeModeActive != previousState) {
+         Debug.LogWarning($"[{gameObject.name}] Freeze mode changed from {previousState} to {this.freezeModeActive}. GameManager state: {GameManager.Instance?.IsFreezeModeActive}");
+    }
+}
+
 
 void OnDrawGizmos()
 {
@@ -706,17 +948,12 @@ void OnDrawGizmos()
 
 private void ShowFloatingText(string text, Vector3 position, Color? color = null)
 {
-    if (floatingTextPrefab == null)
-    {
-        // Pas besoin de log ici, déjà géré ailleurs si nécessaire
-        return;
-    }
+        if (floatingTextPrefab == null || _foundWorldSpaceCanvasTransform == null)
+        {
+            // Debug.LogError("ShowFloatingText: Prefab ou Canvas manquant."); // Éviter trop de logs
+            return;
+        }
 
-    if (_foundWorldSpaceCanvasTransform == null)
-    {
-        Debug.LogError("ShowFloatingText: _foundWorldSpaceCanvasTransform est null. Impossible d'instancier le texte flottant.");
-        return;
-    }
 
     // Instancier comme enfant du Canvas
     GameObject textInstance = Instantiate(floatingTextPrefab, position, Quaternion.identity, _foundWorldSpaceCanvasTransform);
@@ -729,7 +966,7 @@ private void ShowFloatingText(string text, Vector3 position, Color? color = null
     }
     else
     {
-        Debug.LogWarning("Le prefab de texte flottant n'a pas le script FloatingTextEffect.");
+        // Debug.LogWarning("Le prefab de texte flottant n'a pas le script FloatingTextEffect.");
         // Détruire l'instance si le script est manquant pour éviter les objets orphelins
         Destroy(textInstance);
     }

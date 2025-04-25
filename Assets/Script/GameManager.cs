@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using System;
 using System.Collections;
 using TMPro;
 
@@ -12,12 +13,15 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance;
 
     [Header("UI Elements")]
-    public GameObject gameOverPanel;
-    //public Text coverageText;
     public Text scoreText;
     public Text bubbleText;
     public Slider coverageSlider;
     public Camera mainCamera;
+    public GameObject freezeIndicator;
+    public Slider freezeSlider;
+    public GameObject swipeIndicator;
+    public Slider swipeSlider;
+    public GameObject gameOverPanel;
 
 
     [Header("Game Variables")]
@@ -32,24 +36,36 @@ public class GameManager : MonoBehaviour
     // Vitesse à laquelle la barre se met à jour visuellement
     public float coverageSmoothingSpeed = 5.0f;
 
-    //[Header("Confinement")]
-    // Marge � appliquer sur les bords (10% par d�faut)
-    //public float confinementMargin = 0.1f;
-
     private AudioManager audioManagerInstance;
 
     [Header("Spawner Reference")]
     public BubbleSpawner bubbleSpawner;
 
-    // Ces bool�ens pourront �tre utilis�s par d'autres scripts pour adapter le gameplay
 
 
+    // --- NOUVELLES VARIABLES POUR LES MODES GLOBAUX ---
+    private bool _isSwipeModeActive = false;
+    public bool IsSwipeModeActive => _isSwipeModeActive; // Propriété publique en lecture seule
+
+    private bool _isFreezeModeActive = false;
+    public bool IsFreezeModeActive => _isFreezeModeActive; // Propriété publique en lecture seule
+
+    // --- Optionnel : Timers pour les modes ---
+    private Coroutine swipeModeTimerCoroutine;
+    private float swipeTimer = 0f;           // <<--- AJOUT : Temps restant pour le Swipe
+    private float currentSwipeDuration = 0f; // <<--- AJOUT : Durée totale du Swmipe actuel
+
+
+    private Coroutine freezeModeTimerCoroutine;
+    private float freezeTimer = 0f;           // <<--- AJOUT : Temps restant pour le Freeze
+    private float currentFreezeDuration = 0f; // <<--- AJOUT : Durée totale du Freeze actuel
 
     void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+            return;
             // DontDestroyOnLoad(gameObject); // Si nécessaire
         }
         else
@@ -84,12 +100,26 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         Time.timeScale = 1f; // Le jeu d�marre actif
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(false);
+
+        // Désactiver les indicateurs de mode au démarrage
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        if (freezeIndicator != null) freezeIndicator.SetActive(false);
+        if (swipeIndicator != null) swipeIndicator.SetActive(false);
+
+        // Réinitialiser les états et timers
         gameIsOver = false;
         score = 0;
         nb_bulles = 0;
         coveragePercentage = 0f;
+
+        _isFreezeModeActive = false;
+        freezeTimer = 0f;
+        currentFreezeDuration = 0f;
+
+        _isSwipeModeActive = false;
+        swipeTimer = 0f;
+        currentSwipeDuration = 0f;
+
         UpdateUI();
     }
 
@@ -115,7 +145,37 @@ public class GameManager : MonoBehaviour
         UpdateUI();
     }
 
+    void Update()
+    {
+        // --- Autre logique de Update (score, game over, input global...) ---
 
+
+        // --- MISE A JOUR DU SLIDER FREEZE ---
+        if (_isFreezeModeActive) // Vérifier si le mode est actif
+        {
+            // Vérifier si le slider est assigné et si la durée est valide
+            if (freezeSlider != null && currentFreezeDuration > 0)
+            {
+                // Calculer la proportion de temps restant (valeur entre 0 et 1)
+                float sliderFreezeValue = freezeTimer / currentFreezeDuration;
+                // Appliquer la valeur au slider, en s'assurant qu'elle reste entre 0 et 1
+                freezeSlider.value = Mathf.Clamp01(sliderFreezeValue);
+            }
+        }
+
+        // --- MISE A JOUR DU SLIDER SWIPE ---
+        if (_isSwipeModeActive) // Vérifier si le mode est actif
+        {
+            // Vérifier si le slider est assigné et si la durée est valide
+            if (swipeSlider != null && currentSwipeDuration > 0)
+            {
+                // Calculer la proportion de temps restant (valeur entre 0 et 1)
+                float swipeSwipeValue = swipeTimer / currentSwipeDuration;
+                // Appliquer la valeur au slider, en s'assurant qu'elle reste entre 0 et 1
+                swipeSlider.value = Mathf.Clamp01(swipeSwipeValue);
+            }
+        }
+    }
 
     public void AddScore(int pointsToAdd)
     {
@@ -171,10 +231,8 @@ public class GameManager : MonoBehaviour
             }
 
             // 2. Convertir ce ratio (0 à 1) en pourcentage (0 à 100) pour le slider.
-            float sliderValue = progressRatio * 100f;
+            float sliderValue = Mathf.Clamp01(progressRatio) * 100f;
 
-            // 3. Clamper le résultat final entre 0 et 100 (sécurité).
-            sliderValue = Mathf.Clamp(sliderValue, 0f, 100f);
 
             // 4. Appliquer au slider (qui doit avoir Min=0, Max=100 dans l'inspecteur).
             coverageSlider.value = sliderValue;
@@ -282,6 +340,9 @@ public class GameManager : MonoBehaviour
             Debug.Log("Game Over !");
             if (gameOverPanel != null)
                 gameOverPanel.SetActive(true);
+                freezeIndicator.SetActive(false);
+                swipeIndicator.SetActive(false);
+                
             Time.timeScale = 0f;
 
             if (AudioManager.Instance != null) // Utiliser le singleton directement
@@ -298,28 +359,249 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
-        gameIsOver = false;
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(false);
-        score = 0;
-        coveragePercentage = 0f;
-        UpdateUI();
+        // Recharger la scène actuelle est le moyen le plus simple de tout réinitialiser
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 
-        // D�truire toutes les bulles pr�sentes en sc�ne (assurez-vous qu'elles portent le tag "Bubble")
-        GameObject[] bubbles = GameObject.FindGameObjectsWithTag("Bubble");
-        foreach (GameObject bubble in bubbles)
+
+    // --- NOUVELLES MÉTHODES POUR GÉRER LES MODES ---
+
+    public void SetSwipeMode(bool activate, float duration = 0f)
+    {
+        // --- Gestion des états redondants ---
+        if (activate && _isSwipeModeActive) // Déjà actif, on veut peut-être juste redémarrer/étendre ?
         {
-            Destroy(bubble);
+            if (duration > 0) // Si une nouvelle durée est fournie, on redémarre
+            {
+                Debug.Log($"Swipe Mode déjà actif. Redémarrage du timer pour {duration}s.");
+                if (swipeModeTimerCoroutine != null) StopCoroutine(swipeModeTimerCoroutine);
+
+                currentSwipeDuration = duration; // Mettre à jour la durée
+                swipeTimer = duration;           // Réinitialiser le temps restant
+                swipeModeTimerCoroutine = StartCoroutine(SwipeTimerCoroutine()); // Relancer la coroutine
+
+                // S'assurer que le slider est visuellement à fond
+                if (swipeSlider != null) swipeSlider.value = 1f;
+            }
+            else
+            {
+                 Debug.Log("Swipe Mode déjà actif. Aucune nouvelle durée fournie.");
+            }
+            return; // Sortir car l'état de base ne change pas
+        }
+        if (!activate && !_isSwipeModeActive) // Déjà inactif
+        {
+            Debug.Log("Swipe Mode déjà inactif.");
+            return; // Sortir
         }
 
-        // R�initialiser le spawner
-        if (bubbleSpawner != null)
+        // --- Mise à jour de l'état principal ---
+        _isSwipeModeActive = activate;
+        Debug.Log($"GameManager: Swipe Mode global mis à {activate}");
+
+        // --- Gestion de l'indicateur visuel (Panel) ---
+        if (swipeIndicator != null)
         {
-            bubbleSpawner.RestartSpawner();
+            swipeIndicator.SetActive(activate);
+            Debug.Log($"GameManager: SwipeIndicator visibility set to {activate}");
+        }
+        else if (activate)
+        {
+            Debug.LogWarning("GameManager: swipeIndicator non assigné.");
+        }
+
+        // --- Arrêt de la coroutine précédente (si elle existe) ---
+        if (activate)
+        {
+            if (duration > 0)
+            {
+                currentSwipeDuration = duration; // Stocker la durée totale
+                swipeTimer = duration;           // Initialiser le temps restant
+                swipeModeTimerCoroutine = StartCoroutine(SwipeTimerCoroutine()); // Démarrer le décompte
+
+                // Initialiser le slider à 100%
+                if (swipeSlider != null)
+                {
+                    swipeSlider.value = 1.0f;
+                }
+                else
+                {
+                    Debug.LogWarning("GameManager: swipeSlider non assigné. Le slider ne sera pas mis à jour.");
+                }
+            }
+            else
+            {
+                Debug.LogError($"Tentative d'activation du Swipe Mode sans durée valide ({duration}s). Annulation.");
+                _isSwipeModeActive = false; // Revenir à l'état inactif
+                if (swipeIndicator != null) swipeIndicator.SetActive(false); // Cacher l'indicateur
+            }
+        }
+        // --- Logique de Désactivation ---
+        else
+        {
+            swipeTimer = 0f;           // Réinitialiser le temps
+            currentSwipeDuration = 0f; // Réinitialiser la durée
+            // Optionnel: Mettre le slider à 0% (même s'il est caché)
+            if (swipeSlider != null)
+            {
+                swipeSlider.value = 0f;
+            }
+            // IMPORTANT : Notifier les bulles que le freeze est terminé !
+            //NotifyBubblesOfSwipeEnd(); // Assure-toi que cette méthode existe
         }
     }
 
 
+ 
+    public void SetFreezeMode(bool activate, float duration = 0f)
+    {
+        // --- Gestion des états redondants ---
+
+        // CAS 1: On essaie d'activer un mode déjà actif
+        if (activate && _isFreezeModeActive)
+        {
+            if (duration > 0) // Si une nouvelle durée est fournie, on redémarre/étend
+            {
+                Debug.Log($"Freeze Mode déjà actif. Redémarrage du timer pour {duration}s.");
+                if (freezeModeTimerCoroutine != null) StopCoroutine(freezeModeTimerCoroutine);
+
+                currentFreezeDuration = duration; // Mettre à jour la durée
+                freezeTimer = duration;           // Réinitialiser le temps restant
+                freezeModeTimerCoroutine = StartCoroutine(FreezeTimerCoroutine()); // Relancer la coroutine
+
+                // S'assurer que le slider est visuellement à fond
+                if (freezeSlider != null) freezeSlider.value = 1f;
+            }
+            else
+            {
+                 Debug.Log("Freeze Mode déjà actif. Aucune nouvelle durée fournie.");
+            }
+            return; // Sortir car l'état de base (_isFreezeModeActive) ne change pas
+        }
+
+        // CAS 2: On essaie de désactiver un mode déjà inactif
+        if (!activate && !_isFreezeModeActive)
+        {
+            Debug.Log("Freeze Mode déjà inactif.");
+            return; // Sortir car l'état de base (_isFreezeModeActive) ne change pas
+        }
+
+        // --- Si on arrive ici, c'est qu'on change réellement d'état (Actif -> Inactif ou Inactif -> Actif) ---
+
+
+        _isFreezeModeActive = activate;
+        Debug.Log($"GameManager: Freeze Mode global mis à {activate}");
+
+
+        // --- Gestion de l'indicateur visuel (Panel) ---
+        if (freezeIndicator != null)
+        {
+            freezeIndicator.SetActive(activate);
+            Debug.Log($"GameManager: FreezeIndicator visibility set to {activate}");
+        }
+        else if (activate)
+        {
+            Debug.LogWarning("GameManager: freezeIndicator non assigné.");
+        }
+
+        // --- Arrêt de la coroutine précédente (si elle existe) ---
+        if (freezeModeTimerCoroutine != null)
+        {
+            StopCoroutine(freezeModeTimerCoroutine);
+            freezeModeTimerCoroutine = null;
+        }
+
+        // --- Logique d'Activation ---
+        if (activate)
+        {
+            if (duration > 0)
+            {
+                currentFreezeDuration = duration; // Stocker la durée totale
+                freezeTimer = duration;           // Initialiser le temps restant
+                freezeModeTimerCoroutine = StartCoroutine(FreezeTimerCoroutine()); // Démarrer le décompte
+
+                // Initialiser le slider à 100%
+                if (freezeSlider != null)
+                {
+                    freezeSlider.value = 1.0f;
+                }
+                else
+                {
+                    Debug.LogWarning("GameManager: freezeSlider non assigné. Le slider ne sera pas mis à jour.");
+                }
+            }
+            else
+            {
+                Debug.LogError($"Tentative d'activation du Freeze Mode sans durée valide ({duration}s). Annulation.");
+                _isFreezeModeActive = false; // Revenir à l'état inactif
+                if (freezeIndicator != null) freezeIndicator.SetActive(false); // Cacher l'indicateur
+            }
+        }
+        // --- Logique de Désactivation ---
+        else
+        {
+            freezeTimer = 0f;           // Réinitialiser le temps
+            currentFreezeDuration = 0f; // Réinitialiser la durée
+            // Optionnel: Mettre le slider à 0% (même s'il est caché)
+            if (freezeSlider != null)
+            {
+                freezeSlider.value = 0f;
+            }
+            // IMPORTANT : Notifier les bulles que le freeze est terminé !
+            //NotifyBubblesOfFreezeEnd(); // Assure-toi que cette méthode existe
+        }
+    }
+
+    private IEnumerator FreezeTimerCoroutine()
+    {
+        Debug.Log($"Freeze Coroutine démarrée. Durée: {currentFreezeDuration}s");
+        // Boucle tant qu'il reste du temps
+        while (freezeTimer > 0)
+        {
+            freezeTimer -= Time.deltaTime;
+            yield return null; // Attendre la prochaine frame
+        }
+
+        // Le temps est écoulé
+        freezeTimer = 0; // Assurer la valeur exacte
+        Debug.Log("Freeze Coroutine terminée (temps écoulé).");
+
+        // Appeler SetFreezeMode(false) pour désactiver proprement
+        SetFreezeMode(false);
+
+        freezeModeTimerCoroutine = null; // Marquer la coroutine comme terminée
+    }
+
+    private IEnumerator SwipeTimerCoroutine()
+    {
+        Debug.Log($"Swipe Coroutine démarrée. Durée: {currentSwipeDuration}s");
+        // Boucle tant qu'il reste du temps
+        while (swipeTimer > 0)
+        {
+            swipeTimer -= Time.deltaTime;
+            yield return null; // Attendre la prochaine frame
+        }
+
+        // Le temps est écoulé
+        swipeTimer = 0; // Assurer la valeur exacte
+        Debug.Log("Swipe Coroutine terminée (temps écoulé).");
+
+        // Appeler SetFreezeMode(false) pour désactiver proprement
+        SetSwipeMode(false);
+
+        swipeModeTimerCoroutine = null; // Marquer la coroutine comme terminée
+    }
+
+    /// <summary>
+    /// Coroutine générique pour attendre une durée puis exécuter une action.
+    /// </summary>
+    /// <param name="delay">Temps d'attente en secondes.</param>
+    /// <param name="onComplete">Action à exécuter à la fin du délai.</param>
+    private IEnumerator ModeTimerCoroutine(float delay, System.Action onComplete)
+    {
+        yield return new WaitForSeconds(delay);
+        onComplete?.Invoke(); // Exécute l'action fournie (ex: SetSwipeMode(false))
+    }
 
 
 

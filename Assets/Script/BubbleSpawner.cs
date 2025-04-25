@@ -5,17 +5,17 @@ using System.Collections.Generic;
 public class BubbleSpawner : MonoBehaviour
 {
     [Header("Configuration du Spawner")]
-    [Tooltip("Prefab de la bulle � faire appara�tre.")]
+    [Tooltip("Prefab de la bulle a faire apparaetre.")]
     public GameObject bubblePrefab;
 
-    [Tooltip("Espace horizontal de spawn (en unit�s Unity).")]
+    [Tooltip("Espace horizontal de spawn (en unites Unity).")]
     public float spawnWidth = 8f;
 
 
-    [Header("Ajustement de difficult�")]
+    [Header("Ajustement de difficulte")]
     [Tooltip("Intervalle de temps entre chaque spawn.")]
-    public float spawnInterval = 1.5f;
-    [Tooltip("R�duction de l'intervalle de spawn au fil du temps.")]
+    public float spawnInterval = 5f;
+    [Tooltip("Reduction de l'intervalle de spawn au fil du temps.")]
     public float spawnAcceleration = 0.01f;
     [Tooltip("Intervalle minimal entre les spawns.")]
     public float minSpawnInterval = 0.5f;
