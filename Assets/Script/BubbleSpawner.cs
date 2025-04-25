@@ -152,4 +152,34 @@ public class BubbleSpawner : MonoBehaviour
         timer = 0f;
         spawnInterval = minSpawnInterval;
     }
+
+    // --- Ajout de la visualisation Gizmos ---
+    void OnDrawGizmos()
+    {
+        // Choisir une couleur pour les lignes de délimitation
+        Gizmos.color = Color.cyan; // Tu peux choisir la couleur que tu préfères
+
+        // Calculer les positions gauche et droite de la zone de spawn
+        // On suppose que le spawner est au centre de cette zone
+        Vector3 spawnerPosition = transform.position;
+        float halfWidth = spawnWidth / 2f;
+        Vector3 leftBoundary = spawnerPosition + Vector3.left * halfWidth;
+        Vector3 rightBoundary = spawnerPosition + Vector3.right * halfWidth;
+
+        // Définir une hauteur pour les lignes (arbitraire, juste pour la visibilité)
+        float lineLength = 5f; // Ajuste cette valeur si besoin
+        Vector3 topOffset = Vector3.up * (lineLength / 2f);
+        Vector3 bottomOffset = Vector3.down * (lineLength / 2f);
+
+        // Dessiner les deux lignes verticales
+        Gizmos.DrawLine(leftBoundary + topOffset, leftBoundary + bottomOffset);
+        Gizmos.DrawLine(rightBoundary + topOffset, rightBoundary + bottomOffset);
+
+        // Optionnel : Dessiner une ligne horizontale reliant les deux pour mieux voir la zone
+        // Gizmos.DrawLine(leftBoundary + topOffset, rightBoundary + topOffset); // Ligne du haut
+        // Gizmos.DrawLine(leftBoundary + bottomOffset, rightBoundary + bottomOffset); // Ligne du bas
+        // Gizmos.DrawLine(leftBoundary, rightBoundary); // Ligne au niveau du spawner
+    }
+
+
 }

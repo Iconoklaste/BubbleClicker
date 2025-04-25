@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using System.Collections;
 using static BubbleSpawner; // Décommenter si BubbleType est défini dans BubbleSpawner
 // using Random = UnityEngine.Random; // Décommenter si nécessaire
 
@@ -42,6 +43,9 @@ public class BulleShaderController : MonoBehaviour
     public int maxGenerations = 4;
     public int basePoints = 10;
     public BubbleType bubbleType;
+    
+    public bool swipeModeActive = false;
+    public bool freezeModeActive = false;
 
     [Header("UI Feedback")] // Nouvelle section dans l'inspecteur
     public GameObject floatingTextPrefab;
@@ -401,7 +405,7 @@ private void OnMouseDown()
             scoreToDisplay = basePoints; // Score pour le swipe
             if (gameManagerInstance != null)
             {
-                 gameManagerInstance.ActivateSwipeMode(3f);
+                 ActivateSwipeMode(3f);
                  gameManagerInstance.AddScore(scoreToDisplay); // Ajouter le score
                  gameManagerInstance.NbBubblePoped(1);
             }
@@ -420,7 +424,7 @@ private void OnMouseDown()
             scoreToDisplay = basePoints; // Score pour le freeze
              if (gameManagerInstance != null)
              {
-                 gameManagerInstance.ActivateFreezeMode(3f);
+                 ActivateFreezeMode(3f);
                  gameManagerInstance.AddScore(scoreToDisplay); // Ajouter le score
                  gameManagerInstance.NbBubblePoped(1);
              }
@@ -620,6 +624,40 @@ private void SpawnChildBubbles()
 
                 Destroy(gameObject); // Détruire la bulle explosive
             });
+    }
+
+
+    private void ActivateSwipeMode(float duration)
+    {
+        Debug.Log("Activation du mode Swipe pour " + duration + " secondes.");
+        StartCoroutine(SwipeModeCoroutine(duration));
+    }
+
+    private IEnumerator SwipeModeCoroutine(float duration)
+    {
+        swipeModeActive = true;
+        // Ici, on peut ajouter le code pour activer les effets visuels ou logiques du mode Swipe.
+        yield return new WaitForSeconds(duration);
+        swipeModeActive = false;
+        Debug.Log("Mode Swipe désactivé.");
+    }
+
+    // M�thode d'activation du mode Freeze
+    private void ActivateFreezeMode(float duration)
+    {
+        Debug.Log("Activation du mode Freeze pour " + duration + " secondes.");
+        StartCoroutine(FreezeModeCoroutine(duration));
+    }
+
+    private IEnumerator FreezeModeCoroutine(float duration)
+    {
+        freezeModeActive = true;
+        // Par exemple, vous pouvez ralentir le temps de jeu pour les bulles (mais attention Time.timeScale affecte tout)
+        // Ou bien, appliquer un multiplicateur sur la vitesse de d�placement des bulles
+        // Ici on simule simplement l'effet par un Debug.Log
+        yield return new WaitForSeconds(duration);
+        freezeModeActive = false;
+        Debug.Log("Mode Freeze désactivé.");
     }
 
 void OnDrawGizmos()
